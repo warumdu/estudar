@@ -1,0 +1,19 @@
+{
+  "name": "ts-fsrs",
+  "version": "5.4.2",
+  "source": "npm:ts-fsrs@5.4.2",
+  "files": {
+    "index.js": {
+      "from": "dist/index.mjs",
+      "sha256": "ad4a4b3b7e259fcbf02764454c8f9db4ea3bf5aae2f473198129ecb7728f1a19"
+    },
+    "index.d.ts": {
+      "from": "dist/index.d.ts",
+      "sha256": "86619bd94f12a259832e2d3e1e7cacdc392174410d674e5999729e13889a4f41"
+    },
+    "LICENSE": {
+      "from": "LICENSE",
+      "sha256": "8b83a73dd2894ff553d6de6113064b3ad9dfad3f839837b61f3b183881131d01"
+    }
+  }
+}
