@@ -16,7 +16,7 @@ before(async () => {
   page = await context.newPage();
   page.on('console', (msg) => {
     // Die absichtliche Anfrage nach einer fehlenden Datei (Offline-Test) erzeugt erwartbar eine Meldung.
-    if (msg.type() === 'error' && !(msg.location()?.url || '').includes('gibt-es-nicht')) consoleErrors.push(msg.text());
+    if (msg.type() === 'error' && !/gibt-es-nicht|unbekannt\//.test(msg.location()?.url || '')) consoleErrors.push(msg.text());
   });
   page.on('pageerror', (err) => consoleErrors.push(String(err)));
 });
@@ -52,6 +52,12 @@ test('App-Hülle liegt vollständig im Cache', async () => {
   for (const p of ['/estudar/', '/estudar/index.html', '/estudar/manifest.webmanifest', '/estudar/icons/icon-180.png', '/estudar/icons/icon-192.png', '/estudar/icons/icon-512.png', '/estudar/icons/icon-512-maskable.png']) {
     assert.ok(cached.includes(p), `${p} fehlt im Cache: ${cached.join(', ')}`);
   }
+  const withQuery = await page.evaluate(async () => {
+    const names = await caches.keys();
+    const cache = await caches.open(names.find((n) => n.startsWith('estudar-v')));
+    return (await cache.keys()).map((r) => r.url).filter((u) => u.includes('?'));
+  });
+  assert.deepEqual(withQuery, [], 'Cache-Schlüssel dürfen den Versionsparameter nicht tragen');
 });
 
 test('Manifest wird geladen und die Icons sind erreichbar', async () => {
@@ -96,6 +102,11 @@ test('offline: Neuladen und Navigation funktionieren aus dem Cache', async () =>
     assert.equal(await page.locator('h1').textContent(), 'Hallo');
     await page.goto(server.base + '?quelle=homescreen');
     assert.equal(await page.locator('h1').textContent(), 'Hallo', 'Anfrage mit Query muss den Cache treffen');
+    await page.goto(server.base + 'unbekannt');
+    assert.equal(await page.locator('h1').textContent(), 'Hallo', 'unbekannte Adresse im App-Verzeichnis fällt offline auf index.html zurück');
+    const deep = await page.goto(server.base + 'unbekannt/seite');
+    assert.equal(deep.status(), 503, 'tiefere Pfade bekommen keine index.html (relative Verweise würden brechen)');
+    await page.goto(server.base);
     // Zur Laufzeit geladene Datei (ts-fsrs) ist ebenfalls offline verfügbar.
     const version = await page.evaluate(async () => (await import('./vendor/ts-fsrs/index.js')).FSRSVersion);
     assert.match(version, /^v5\.4\.2\b/);

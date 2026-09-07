@@ -21,13 +21,24 @@ function isAppFile(f) {
 
 const LOAD_PATTERNS = [
   /(?:src|href)\s*=\s*["']?\s*(?:https?:)?\/\//i,           // <script src="https://…">, <link href="//…">
-  /\bfrom\s*["'](?:https?:)?\/\//,                          // import x from "https://…"
-  /\bimport\s*\(\s*["'](?:https?:)?\/\//,                   // import("https://…")
-  /\bimportScripts\s*\(\s*["'](?:https?:)?\/\//,            // importScripts("https://…")
+  /\bfrom\s*["'`](?:https?:)?\/\//,                         // import x from "https://…"
+  /\bimport\s*["'`](?:https?:)?\/\//,                        // import "https://…" (Seiteneffekt-Import)
+  /\bimport\s*\(\s*["'`](?:https?:)?\/\//,                  // import("https://…")
+  /\bimportScripts\s*\(\s*["'`](?:https?:)?\/\//,           // importScripts("https://…")
+  /\bnew\s+(?:Worker|SharedWorker)\s*\(\s*["'`](?:https?:)?\/\//, // new Worker("https://…")
   /\burl\(\s*["']?(?:https?:)?\/\//i,                       // CSS url(https://…)
-  /\bfetch\s*\(\s*["'](?:https?:)?\/\//,                    // fetch("https://…")
+  /\bfetch\s*\(\s*["'`](?:https?:)?\/\//,                   // fetch("https://…")
   /@import\s+(?:url\()?\s*["']?(?:https?:)?\/\//i,          // CSS @import
 ];
+
+/** Entfernt Kommentare, ohne "https://…" in Strings anzutasten: Zeilenkommentare
+ *  zählen nur, wenn "//" am Zeilenanfang oder nach Leerraum steht. */
+function stripComments(text) {
+  return text
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|\s)\/\/[^\n]*/g, '$1');
+}
 
 test('kein CDN-Hostname irgendwo im Repository', () => {
   const hits = [];
@@ -54,9 +65,22 @@ test('App-Dateien laden nichts von http(s)://', () => {
   assert.deepEqual(hits, [], 'externe Ladevorgänge gefunden');
 });
 
-test('index.html und sw.js enthalten überhaupt keine fremde Adresse', () => {
+test('App-Dateien enthalten außerhalb von Kommentaren keine Protokoll-Adresse', () => {
+  // Strengste Regel: In Code, den der Browser lädt, kommt "://" gar nicht vor –
+  // egal ob in einem Import, einem Template-String oder einem Fetch. Einzige
+  // Ausnahme ist der SVG-Namensraum, der nur ein Bezeichner ist und nie geladen wird.
+  const hits = [];
+  for (const f of listRepoFiles().filter(isAppFile)) {
+    const text = stripComments(readText(f)).replace(/xmlns(?::\w+)?="http:\/\/www\.w3\.org\/[^"]*"/g, '');
+    text.split('\n').forEach((line, i) => {
+      if (line.includes('://')) hits.push(`${f}:${i + 1}: ${line.trim().slice(0, 120)}`);
+    });
+  }
+  assert.deepEqual(hits, [], 'Protokoll-Adressen in App-Dateien gefunden');
+});
+
+test('index.html, sw.js und Manifest enthalten überhaupt keine fremde Adresse', () => {
   for (const f of ['index.html', 'sw.js', 'manifest.webmanifest']) {
-    const text = readText(f);
-    assert.doesNotMatch(text, /https?:\/\//, `${f} enthält eine http(s)-Adresse`);
+    assert.doesNotMatch(readText(f), /https?:\/\//, `${f} enthält eine http(s)-Adresse`);
   }
 });

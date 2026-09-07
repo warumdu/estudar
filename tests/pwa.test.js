@@ -1,5 +1,6 @@
 // Prüft die PWA-Hülle aus Phase 0: Manifest, Icons, Meta-Tags, Service Worker.
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -47,7 +48,7 @@ test('index.html: iOS-Installations-Tags und Manifest-Verweis', () => {
   assert.deepEqual(pngSize('icons/icon-180.png'), { width: 180, height: 180 });
   assert.match(html, /<h1>Hallo<\/h1>/);
   assert.match(html, /serviceWorker\.register\('sw\.js'/);
-  assert.doesNotMatch(html, /href="\/|src="\//, 'absolute Pfade brechen unter /estudar/');
+  assert.doesNotMatch(html, /(?:href|src)=["']\//, 'absolute Pfade brechen unter /estudar/');
 });
 
 test('Version ist in package.json, sw.js und index.html identisch', () => {
@@ -94,8 +95,11 @@ async function runServiceWorker() {
     skipWaiting: async () => { self.skipped = true; },
     clients: { claim: async () => { self.claimed = true; } },
   };
-  const context = vm.createContext({ self, caches, fetch, Response, Request, URL, Promise, Error, console });
+  const context = vm.createContext({ self, caches, fetch, Response, Request, URL, Promise, Error, TypeError, console });
   vm.runInContext(sw, context, { filename: 'sw.js' });
+  // Top-Level-"var" in sw.js landet auf dem Sandbox-Global – so kommen wir ohne Regex an die echten Werte.
+  const APP_SHELL = context.APP_SHELL;
+  const VERSION = context.VERSION;
 
   const dispatch = async (type, extra = {}) => {
     const waits = [];
@@ -103,18 +107,60 @@ async function runServiceWorker() {
     for (const fn of listeners[type] ?? []) fn(event);
     await Promise.all(waits);
   };
+  /** Schickt einen GET durch den fetch-Handler; offline=true lässt fetch() scheitern. */
+  const request = async (path, { mode = 'no-cors', offline = false } = {}) => {
+    const req = { url: new URL(path, scriptUrl).href, method: 'GET', mode };
+    let responded;
+    const realFetch = context.fetch;
+    if (offline) context.fetch = async () => { throw new TypeError('Failed to fetch'); };
+    try {
+      for (const fn of listeners.fetch ?? []) fn({ request: req, respondWith: (p) => { responded = p; } });
+      return responded ? await responded : undefined; // undefined = Handler hat die Anfrage dem Browser überlassen
+    } finally { context.fetch = realFetch; }
+  };
   await dispatch('install');
   await dispatch('activate');
-  return { self, stores, fetched, listeners };
+  return { self, stores, fetched, listeners, APP_SHELL, VERSION, request };
+}
+
+test('sw.js: fetch-Handler – Cache zuerst, Offline-Fallback nur im App-Verzeichnis', async () => {
+  const { request } = await runServiceWorker();
+  const shell = await request('./index.html', { offline: true });
+  assert.equal(shell.status, 200, 'App-Hülle muss offline aus dem Cache kommen');
+  assert.match(await shell.text(), /<h1>Hallo<\/h1>/);
+  const root = await request('./?quelle=homescreen', { mode: 'navigate', offline: true });
+  assert.equal(root.status, 200, 'Start-URL mit Query muss offline den Cache treffen');
+  const unknownFlat = await request('./unbekannt', { mode: 'navigate', offline: true });
+  assert.equal(unknownFlat.status, 200, 'unbekannte Adresse direkt im App-Verzeichnis fällt auf index.html zurück');
+  const unknownDeep = await request('./unbekannt/seite', { mode: 'navigate', offline: true });
+  assert.equal(unknownDeep.status, 503, 'tiefere Pfade bekommen keine index.html');
+  const asset = await request('./gibt-es-nicht.png', { offline: true });
+  assert.equal(asset.status, 503);
+  assert.match(await asset.text(), /Offline und nicht im Cache/);
+  const foreign = await request('https://fremd.example/x.js');
+  assert.equal(foreign, undefined, 'fremde Ursprünge gehen am Service Worker vorbei');
+});
+
+/** Alle relativen Dateien, die index.html und das Manifest referenzieren (ohne sw.js, das der Browser selbst holt). */
+function referencedAssets() {
+  const refs = new Set();
+  for (const m of html.matchAll(/(?:href|src)=["']([^"']+)["']/g)) {
+    const ref = m[1];
+    if (/^(?:[a-z]+:|#)/i.test(ref) || ref === 'sw.js') continue;
+    refs.add(ref);
+  }
+  for (const icon of manifest.icons) refs.add(icon.src);
+  return [...refs];
 }
 
 test('sw.js: Precache enthält jede Datei der App-Hülle und die Dateien existieren', async () => {
-  const { self, stores, fetched } = await runServiceWorker();
+  const { self, stores, fetched, APP_SHELL: shell, VERSION } = await runServiceWorker();
+  assert.equal(VERSION, pkg.version);
   const cacheName = `estudar-v${pkg.version}`;
   assert.ok(stores.has(cacheName), `Cache ${cacheName} wurde nicht angelegt`);
   const cached = [...stores.get(cacheName).keys()].sort();
-  const shell = [...sw.matchAll(/^\s*'(\.\/[^']*)'/gm)].map((m) => m[1]);
-  assert.ok(shell.length >= 5, 'APP_SHELL nicht gefunden');
+  assert.ok(Array.isArray(shell) && shell.length >= 5, 'APP_SHELL nicht gefunden');
+  assert.ok(shell.every((p) => p.startsWith('./')), 'APP_SHELL-Einträge müssen relativ (./) sein');
   for (const path of shell) {
     const rel = path.replace(/^\.\//, '');
     if (rel !== '') assert.ok(existsSync(join(ROOT, rel)), `APP_SHELL verweist auf fehlende Datei: ${path}`);
@@ -128,6 +174,30 @@ test('sw.js: Precache enthält jede Datei der App-Hülle und die Dateien existie
   assert.equal(self.claimed, true, 'clients.claim() fehlt');
   assert.ok(!stores.has('estudar-v0.0.0-alt'), 'alter estudar-Cache wurde nicht gelöscht');
   assert.ok(stores.has('fremd'), 'fremde Caches dürfen nicht angefasst werden');
+});
+
+test('sw.js: alles, was index.html und Manifest referenzieren, steht in APP_SHELL', async () => {
+  const { APP_SHELL } = await runServiceWorker();
+  const shell = new Set(APP_SHELL.map((p) => p.replace(/^\.\//, '')));
+  const missing = referencedAssets().filter((ref) => !shell.has(ref));
+  assert.deepEqual(missing, [], 'referenzierte Dateien fehlen im Precache – offline würden sie fehlen');
+});
+
+test('sw.js: VERSION ist gegenüber origin/main erhöht, wenn sich App-Dateien geändert haben', async () => {
+  // Ohne Build-Schritt gibt es keinen automatischen Cache-Buster: Eine geänderte
+  // App-Hülle erreicht installierte Geräte nur, wenn VERSION steigt.
+  const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  let mainSw;
+  try { mainSw = git('show', 'origin/main:sw.js'); } catch { return; } // main hat noch keinen Service Worker (erste Auslieferung)
+  const mainVersion = mainSw.match(/var VERSION = '([^']+)'/)?.[1];
+  const { APP_SHELL } = await runServiceWorker();
+  const appFiles = [...new Set(['sw.js', 'index.html', 'manifest.webmanifest', ...APP_SHELL.map((p) => p.replace(/^\.\//, '')).filter(Boolean)])];
+  const changed = appFiles.filter((f) => {
+    try { return git('show', `origin/main:${f}`) !== readText(f); } catch { return true; }
+  });
+  if (changed.length) {
+    assert.notEqual(pkg.version, mainVersion, `App-Dateien geändert (${changed.join(', ')}), aber VERSION ist noch ${mainVersion} wie auf main`);
+  }
 });
 
 test('sw.js: Installation scheitert, wenn eine Datei der Hülle fehlt', async () => {

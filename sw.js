@@ -13,7 +13,8 @@
  */
 'use strict';
 
-var VERSION = '0.0.1'; // bei jeder Auslieferung erhöhen (siehe tests/pwa.test.js)
+var SCOPE_PATH = new URL('./', self.location.href).pathname; // z. B. "/estudar/"
+var VERSION = '0.0.1'; // bei JEDER Auslieferung erhöhen – sonst sehen installierte Geräte die Änderung nie (tests/pwa.test.js wacht darüber)
 var CACHE_NAME = 'estudar-v' + VERSION;
 var APP_SHELL = [
   './',
@@ -69,11 +70,17 @@ function cacheFirst(request) {
       if (cached) return cached;
       return fetch(request).then(function (response) {
         if (response.ok && response.type === 'basic') {
-          cache.put(request, response.clone());
+          // Nicht abwarten: die Antwort soll sofort raus. Ein voller Speicher
+          // darf die Anfrage nicht scheitern lassen.
+          cache.put(request, response.clone()).catch(function () {});
         }
         return response;
       }).catch(function () {
-        if (request.mode === 'navigate') {
+        // Offline und unbekannte Adresse: Navigationen direkt im App-Verzeichnis
+        // (z. B. "/estudar/?x=1" oder "/estudar/irgendwas") bekommen die App-Seite.
+        // Tiefere Pfade nicht – dort würden die relativen Verweise der Seite ins
+        // Leere laufen, also lieber eine ehrliche Fehlermeldung.
+        if (request.mode === 'navigate' && isInScopeRoot(new URL(request.url))) {
           return cache.match('./index.html').then(function (fallback) {
             return fallback || offlineResponse(request);
           });
@@ -82,6 +89,10 @@ function cacheFirst(request) {
       });
     });
   });
+}
+
+function isInScopeRoot(url) {
+  return url.pathname.indexOf(SCOPE_PATH) === 0 && url.pathname.slice(SCOPE_PATH.length).indexOf('/') === -1;
 }
 
 function offlineResponse(request) {

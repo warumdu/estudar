@@ -26,8 +26,10 @@
       --warn: #f2c94c;
     }
     * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; }
+    html { height: 100%; }
     body {
+      min-height: 100%;
+      margin: 0;
       background: var(--bg);
       color: var(--text);
       font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
@@ -42,6 +44,7 @@
     main {
       width: 100%;
       max-width: 28rem;
+      margin: auto; /* zentriert, bleibt aber scrollbar, wenn der Inhalt höher ist als der Bildschirm (Querformat) */
       padding: 1.5rem;
       text-align: center;
     }
@@ -69,7 +72,7 @@
     }
     .status li:first-child { border-top: 0; }
     .status .label { color: var(--muted); }
-    .status .value { font-weight: 600; }
+    .status .value { font-weight: 600; text-align: right; }
     .ok { color: var(--accent); }
     .pending { color: var(--warn); }
     .bad { color: #f08c7d; }
@@ -119,6 +122,18 @@
 
       window.addEventListener('load', function () {
         navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (registration) {
+          // register() gelingt auch, wenn die Installation danach scheitert (z. B.
+          // eine Datei der App-Hülle fehlt). Dann wird der neue Worker "redundant".
+          function watchInstall(worker) {
+            if (!worker) return;
+            worker.addEventListener('statechange', function () {
+              if (worker.state === 'redundant' && !navigator.serviceWorker.controller) {
+                setOffline('error', 'Fehler: Installation gescheitert – bitte mit Internet neu laden');
+              }
+            });
+          }
+          watchInstall(registration.installing);
+          registration.addEventListener('updatefound', function () { watchInstall(registration.installing); });
           // Beim Zurückkehren in die App nach einer neuen Fassung suchen.
           document.addEventListener('visibilitychange', function () {
             if (document.visibilityState === 'visible') { registration.update().catch(function () {}); }

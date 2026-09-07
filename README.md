@@ -17,8 +17,8 @@ hier im Original.
 
 ### A. Den Arbeitsstand in `main` übernehmen
 
-GitHub Pages liefert nur aus dem Zweig `main` aus. Die Arbeit liegt auf einem
-eigenen Zweig und muss einmal hinüber.
+Laut Auftrag liefert GitHub Pages aus dem Zweig `main` aus. Die Arbeit liegt auf
+einem eigenen Zweig und muss einmal hinüber.
 
 1. Öffne https://github.com/warumdu/estudar in Safari.
 2. Oben erscheint ein gelber Kasten „**claude/check-environment-setup-u71w8t** had recent pushes"
@@ -26,8 +26,8 @@ eigenen Zweig und muss einmal hinüber.
    Fehlt der Kasten: Reiter **Pull requests** → **New pull request** → bei
    „compare:" den Zweig `claude/check-environment-setup-u71w8t` wählen
    (bei „base:" bleibt `main`).
-3. Tippe **Create pull request** (Titel kann bleiben) und auf der nächsten Seite
-   noch einmal **Create pull request**.
+3. Tippe **Create pull request** (Titel kann bleiben). Erscheint danach ein
+   Formular, dort noch einmal **Create pull request**.
 4. Tippe **Merge pull request**, dann **Confirm merge**. Der Stand ist jetzt in `main`.
 
 ### B. GitHub Pages einschalten (einmalig)
@@ -37,16 +37,23 @@ eigenen Zweig und muss einmal hinüber.
 6. Links in der Liste unter „Code and automation" auf **Pages**.
 7. Unter „Build and deployment" bei **Source** den Eintrag **Deploy from a branch** lassen.
 8. Bei **Branch** den Zweig **main** wählen, daneben den Ordner **/ (root)**, dann **Save**.
-9. Ein bis drei Minuten warten, dann die Seite neu laden. Oben steht dann
-   „Your site is live at **https://warumdu.github.io/estudar/**" mit dem Knopf **Visit site**.
+9. Meist dauert es wenige Minuten, manchmal bis zu zehn. Dann die Seite neu laden:
+   Oben steht „Your site is live at **https://warumdu.github.io/estudar/**" mit dem
+   Knopf **Visit site**. Steht es noch nicht da, einfach später noch einmal laden.
 
 ### C. Auf dem iPhone zum Home-Bildschirm hinzufügen
 
 10. Öffne https://warumdu.github.io/estudar/ **in Safari** auf dem iPhone
     (nicht in Chrome oder einer anderen App). Die Seite zeigt „Hallo".
-11. Tippe unten auf **Teilen** (Quadrat mit Pfeil nach oben).
+11. Tippe auf **Teilen** (Quadrat mit Pfeil nach oben). Je nach iOS-Version sitzt
+    der Knopf unten in der Leiste oder hinter dem Menü **···** rechts in der
+    Adressleiste; dort steht auch direkt **Zum Home-Bildschirm**.
 12. Wähle **Zum Home-Bildschirm** (evtl. nach unten scrollen), dann oben rechts **Hinzufügen**.
 13. Schließe Safari und tippe auf dem Home-Bildschirm auf das grüne Icon **estudar**.
+    **Beim ersten Start vom Icon muss das iPhone Internet haben**, bis unten
+    „Offline: bereit ✓" erscheint. Die App vom Home-Bildschirm hat nämlich ihren
+    eigenen Speicher, getrennt vom Safari-Tab, und lädt sich beim ersten Start
+    einmal komplett hinein.
 
 ### D. Prüfen, ob alles sitzt
 
@@ -58,22 +65,32 @@ Die Seite zeigt drei Zeilen. So sollen sie aussehen, wenn du die App vom Icon st
 | Offline   | bereit ✓                                |
 | Version   | 0.0.1                                   |
 
-14. Flugmodus einschalten, die App schließen (nach oben wischen) und erneut vom
-    Icon starten. Sie muss weiterhin „Hallo" und „Offline: bereit ✓" zeigen.
+14. Erst wenn „Offline: bereit ✓" da war: Flugmodus einschalten, die App schließen
+    (nach oben wischen) und erneut vom Icon starten. Sie muss weiterhin „Hallo" und
+    „Offline: bereit ✓" zeigen.
 15. Gib mir Bescheid, dass das Icon liegt und Schritt 14 klappt. Erst dann geht es
     mit Phase 1 weiter.
 
-Steht bei „Offline" dauerhaft „wird eingerichtet …", einmal Safari-Seite neu laden;
-steht dort „Fehler: …", schick mir den Text.
+Steht bei „Offline" dauerhaft „wird eingerichtet …": Flugmodus aus, App schließen
+und mit Internet neu vom Icon starten. Steht dort „Fehler: …", schick mir den Text.
 
 ## Wichtig zu wissen: iOS kann die Daten einer Web-App löschen
 
-Eine Web-App speichert ihre Daten im Browser-Speicher des iPhones. iOS darf diesen
-Speicher räumen, wenn der Platz knapp wird oder die App sehr lange nicht benutzt
-wurde. Dann sind Karten und Lernfortschritt weg – ohne Warnung. Deshalb bekommt die
-App ab Phase 1 eine **Sicherung als JSON-Datei**: bei Sitzungsende und auf Knopfdruck,
-ablegbar in der iOS-Dateien-App oder iCloud Drive. Aus dieser Datei lässt sich alles
-wiederherstellen. Wie oft du sichern solltest, steht dann in den Einstellungen der App.
+Eine Web-App speichert ihre Daten nur auf dem iPhone, im Speicherbereich der App
+auf dem Home-Bildschirm. Drei Dinge können diese Daten löschen, jeweils ohne Warnung:
+
+- **Speicherdruck.** Wird der Platz auf dem iPhone knapp, darf iOS die Daten von
+  Web-Apps räumen.
+- **Icon löschen.** Entfernst du das Icon vom Home-Bildschirm, sind alle Daten der
+  App weg. Ein neues Icon startet leer.
+- **Getrennte Speicher.** Die App vom Icon und dieselbe Seite im Safari-Tab haben
+  jeweils eigene Daten. Was du in der App lernst, sieht Safari nicht, und umgekehrt.
+  Deshalb immer nur die App vom Icon benutzen.
+
+Deshalb bekommt die App ab Phase 1 eine **Sicherung als JSON-Datei**: bei Sitzungsende
+und auf Knopfdruck, ablegbar in der iOS-Dateien-App oder iCloud Drive. Aus dieser Datei
+lässt sich alles wiederherstellen. Wie oft du sichern solltest, steht dann in den
+Einstellungen der App.
 
 ## Technik in Kürze
 
