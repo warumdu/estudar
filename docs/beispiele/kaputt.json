@@ -1,0 +1,6 @@
+{
+  "schema": "flashdeck/1",
+  "deck": { "name": "Kaputt (absichtlich)" },
+  "cards": [
+    { "type": "vocab", "front": "der Hund", "back": "o cachorro" },
+    { "type": "vocab", "front": "die Katze", "back": "o gato" },

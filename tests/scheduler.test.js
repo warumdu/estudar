@@ -186,3 +186,55 @@ test('Tagesliste bei 5.000 Karten in unter 100 ms', () => {
   assert.ok(q.queue.length > 40);
   assert.ok(ms < 100, `buildQueue brauchte ${ms.toFixed(1)} ms`);
 });
+
+test('Neue Karten pro Tag: Standard 10, in Eingabereihenfolge, heute schon bewertete zehren vom Limit', () => {
+  const cards = [];
+  const states = [];
+  for (let i = 0; i < 300; i++) {
+    // Absichtlich rückwärts angelegt: die Reihenfolge muss aus createdAt kommen, nicht aus der Liste.
+    const n = 299 - i;
+    cards.push(card(`n${String(n).padStart(3, '0')}`, { createdAt: new Date(NOW.getTime() - 3600000 + n).toISOString() }));
+    states.push(S.newState(`n${String(n).padStart(3, '0')}`, NOW));
+  }
+  const q = S.buildQueue({ cards, states, settings: { dailyLimit: 40 }, now: NOW });
+  assert.equal(q.queue.length, 10, 'Standard 10 neue Karten pro Tag');
+  assert.deepEqual(q.queue.map((c) => c.id), ['n000', 'n001', 'n002', 'n003', 'n004', 'n005', 'n006', 'n007', 'n008', 'n009']);
+  assert.equal(q.newBacklog, 290);
+  assert.equal(q.newDue, 300);
+  assert.equal(q.newInQueue, 10);
+  assert.equal(q.reviewsInQueue, 0);
+  assert.equal(q.dueTotal, 300);
+  const q3 = S.buildQueue({ cards, states, settings: { dailyLimit: 40, newLimit: 3 }, now: NOW });
+  assert.deepEqual(q3.queue.map((c) => c.id), ['n000', 'n001', 'n002']);
+  // Drei neue Karten heute schon bewertet (eine davon zweimal: erst neu, dann Lernschritt) → 7 bleiben
+  const reviewsToday = [
+    { cardId: 'n000', state: S.State.New }, { cardId: 'n000', state: S.State.Learning },
+    { cardId: 'n001', state: S.State.New }, { cardId: 'n002', state: S.State.New },
+  ];
+  const rest = states.filter((s) => !['n000', 'n001', 'n002'].includes(s.cardId));
+  const q2 = S.buildQueue({ cards, states: rest, reviewsToday, settings: { dailyLimit: 40 }, now: NOW });
+  assert.equal(q2.queue.length, 7);
+  assert.equal(q2.queue[0].id, 'n003');
+  // newLimit 0: keine neuen Karten, das Wiederholungslimit bleibt davon unberührt
+  const q0 = S.buildQueue({ cards, states, settings: { dailyLimit: 40, newLimit: 0 }, now: NOW });
+  assert.equal(q0.queue.length, 0);
+  assert.equal(q0.newBacklog, 300);
+});
+
+test('Inaktive Decks liefern keine Karten – weder in die Tagesliste noch in die Übung noch in die nächste Fälligkeit', () => {
+  const cards = [card('a', { deckId: 'aktiv' }), card('b', { deckId: 'pause' }), card('c', { deckId: 'alt' })];
+  const states = [S.newState('a', NOW), S.newState('b', NOW), S.newState('c', NOW)];
+  const decks = [{ id: 'aktiv', name: 'A', active: true }, { id: 'pause', name: 'P', active: false }, { id: 'alt', name: 'Phase 1 ohne Feld' }];
+  assert.ok(S.isDeckActive(decks[2]), 'Deck ohne Feld active gilt als aktiv');
+  assert.ok(!S.isDeckActive(decks[1]));
+  assert.deepEqual([...S.inactiveDeckIds(decks)], ['pause']);
+  const q = S.buildQueue({ cards, states, decks, settings: {}, now: NOW });
+  assert.deepEqual(q.queue.map((c) => c.id), ['a', 'c']);
+  assert.equal(q.dueTotal, 2, 'Karten inaktiver Decks zählen nicht als fällig');
+  assert.deepEqual(S.buildPracticeQueue({ cards, states, decks }).map((c) => c.id), ['a', 'c']);
+  const later = { ...states[1], due: new Date(NOW.getTime() + 3600000).toISOString(), state: S.State.Learning };
+  assert.equal(S.nextDue({ cards, states: [later], decks, now: NOW }), null, 'Fälligkeit im inaktiven Deck zählt nicht');
+  assert.equal(S.nextDue({ cards, states: [later], decks: [], now: NOW })?.getTime(), new Date(later.due).getTime());
+  // Ohne decks-Parameter (alte Aufrufer) bleibt alles wie in Phase 1
+  assert.equal(S.buildQueue({ cards, states, settings: {}, now: NOW }).queue.length, 3);
+});

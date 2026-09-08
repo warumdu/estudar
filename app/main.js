@@ -1,17 +1,18 @@
-// estudar – Oberfläche. Fünf Bildschirme: Heute, Session, Decks, Karte, Einstellungen.
+// estudar – Oberfläche. Bildschirme: Heute, Session, Decks, Importieren, Karte, Einstellungen.
 // Kein Framework, kein Build: dieses Modul wird direkt vom Browser geladen.
 
 import { openDatabase, newId } from './db.js';
 import * as S from './scheduler.js';
 import { compareAnswer, ACCENT_CHARS } from './compare.js';
 import { TYPE_LABELS, parseCloze, needsTyping, typedSolution, createCards, validateCardInput, splitTags } from './cards.js';
-import { buildBackup, backupFileName, parseBackup, previewImport, applyImport } from './backup.js';
+import { buildBackup, backupFileName, backupReminder, parseBackup, previewImport, applyImport } from './backup.js';
+import { DeckFormatError, SEPARATORS, detectFormat, parseDeck, planImport, buildImportRecords, cardPreviewText, deckToFile, deckFileName } from './deckformat.js';
 import { probeDeck } from './seed.js';
 
-export const APP_VERSION = '0.1.0';
+export const APP_VERSION = '0.2.0';
 
 const $ = (id) => document.getElementById(id);
-const SCREENS = ['heute', 'session', 'decks', 'karte', 'einstellungen'];
+const SCREENS = ['heute', 'session', 'decks', 'importieren', 'karte', 'einstellungen'];
 
 const app = {
   db: null,
@@ -24,6 +25,7 @@ const app = {
   editingCardId: null,
   lastDeckId: null,
   expandedDecks: new Set(),
+  imp: null,            // laufender Import (siehe importPickFile)
 };
 
 /* =========================================================================
@@ -89,7 +91,7 @@ function route() {
   document.body.classList.toggle('in-session', screen === 'session');
   if (app.pendingUpdate && screen !== 'session') showUpdateHint(); // wartete während der Session
   window.scrollTo(0, 0);
-  const render = { heute: renderHeute, session: renderSession, decks: renderDecks, karte: () => renderKarte(arg), einstellungen: renderEinstellungen }[screen];
+  const render = { heute: renderHeute, session: renderSession, decks: renderDecks, importieren: renderImportieren, karte: () => renderKarte(arg), einstellungen: renderEinstellungen }[screen];
   render().catch((err) => { console.error(err); toast(`Fehler: ${err.message}`); });
 }
 
@@ -169,27 +171,37 @@ const formatDateTime = (iso) => new Date(iso).toLocaleString('de-DE', { day: '2-
  * ========================================================================= */
 
 async function renderHeute() {
-  const { now, cards, states, reviewsToday } = await loadAll();
-  const q = S.buildQueue({ cards, states, reviewsToday, settings: app.settings, now });
+  const { now, cards, states, reviewsToday, decks } = await loadAll();
+  const q = S.buildQueue({ cards, states, reviewsToday, settings: app.settings, decks, now });
   const count = q.queue.length;
-  const anyCards = cards.some((c) => !c.suspended);
+  const inactive = S.inactiveDeckIds(decks);
+  const anyCards = cards.some((c) => !c.suspended && !inactive.has(c.deckId));
   $('heute-count').textContent = String(count);
-  $('heute-label').textContent = count === 0 ? 'Nichts fällig' : count === 1 ? 'fällige Karte' : 'fällige Karten';
+  $('heute-label').textContent = count === 0 ? 'Nichts fällig' : count === 1 ? 'Karte für heute' : 'Karten für heute';
   const notes = [];
-  const waiting = q.backlog + q.deferredSiblings; // fällig, aber erst an den nächsten Tagen dran
-  if (q.backlog > 0 && count > 0) notes.push(`Insgesamt ${q.dueTotal} fällig – der Rest verteilt sich auf die nächsten Tage (Tageslimit ${app.settings.dailyLimit}).`);
-  if (q.backlog > 0 && count === 0) notes.push(`Tageslimit erreicht – ${q.backlog} weitere Wiederholung${q.backlog === 1 ? '' : 'en'} kommen an den nächsten Tagen.`);
+  const waiting = q.backlog + q.newBacklog + q.deferredSiblings; // fällig, aber erst an den nächsten Tagen dran
+  if (q.backlog > 0 && q.reviewsInQueue > 0) notes.push(`Insgesamt ${q.reviewsDue} Wiederholungen fällig – der Rest verteilt sich auf die nächsten Tage (Tageslimit ${app.settings.dailyLimit}).`);
+  if (q.backlog > 0 && q.reviewsInQueue === 0) notes.push(`Tageslimit erreicht – ${q.backlog} weitere Wiederholung${q.backlog === 1 ? '' : 'en'} kommen an den nächsten Tagen.`);
+  if (q.newBacklog > 0 && q.newInQueue > 0) notes.push(`Von ${q.newDue} neuen Karten kommen heute ${q.newInQueue} („neue Karten pro Tag": ${app.settings.newLimit}).`);
+  if (q.newBacklog > 0 && q.newInQueue === 0) notes.push(`Neue Karten für heute erledigt – ${q.newBacklog} weitere warten auf die nächsten Tage.`);
   if (q.deferredSiblings > 0) notes.push(`${q.deferredSiblings} Gegenrichtung${q.deferredSiblings === 1 ? '' : 'en'} kommt erst morgen dran.`);
   if (count === 0 && anyCards && waiting === 0) notes.push('Für heute ist nichts fällig. Du kannst trotzdem üben – das ändert die Terminierung nicht.');
+  if (!anyCards && cards.length > 0) notes.push('Alle Karten liegen in inaktiven Decks oder sind pausiert. Schalte unter „Decks" ein Deck ein.');
   $('heute-note').textContent = notes.join(' ');
   $('heute-note').hidden = notes.length === 0;
+  $('heute-reviews').textContent = q.backlog > 0 ? `${q.reviewsInQueue} von ${q.reviewsDue}` : String(q.reviewsInQueue);
+  $('heute-new').textContent = q.newBacklog > 0 ? `${q.newInQueue} von ${q.newDue}` : String(q.newInQueue);
   $('btn-lernen').hidden = count === 0;
   $('btn-ueben').hidden = !(count === 0 && anyCards);
-  $('heute-empty').hidden = anyCards;
+  $('heute-empty').hidden = cards.length > 0;
   const doneToday = new Set(reviewsToday.map((r) => r.cardId)).size;
   $('heute-done').textContent = doneToday === 1 ? '1 Karte' : `${doneToday} Karten`;
-  const next = S.nextDue({ cards, states, now });
+  const next = S.nextDue({ cards, states, decks, now });
   $('heute-next').textContent = count > 0 ? 'jetzt' : waiting > 0 ? 'morgen' : next ? S.nextDueText(next, now) : '–';
+  // Erinnerung an die Sicherung: eine ruhige Zeile, kein Dialog.
+  const reminder = backupReminder({ lastBackupAt: app.settings.lastBackupAt, reviewCount: await app.db.count('reviews'), now });
+  $('heute-backup-text').textContent = reminder || '';
+  $('heute-backup').hidden = !reminder;
 }
 
 /* =========================================================================
@@ -197,10 +209,10 @@ async function renderHeute() {
  * ========================================================================= */
 
 async function startSession(mode) {
-  const { now, cards, states, reviewsToday } = await loadAll();
+  const { now, cards, states, reviewsToday, decks } = await loadAll();
   const queue = mode === 'learn'
-    ? S.buildQueue({ cards, states, reviewsToday, settings: app.settings, now }).queue
-    : S.buildPracticeQueue({ cards, states, limit: app.settings.dailyLimit });
+    ? S.buildQueue({ cards, states, reviewsToday, settings: app.settings, decks, now }).queue
+    : S.buildPracticeQueue({ cards, states, decks, limit: app.settings.dailyLimit });
   if (!queue.length) { toast('Nichts zu lernen.'); return; }
   app.session = {
     mode, queue: queue.map((c) => c.id), index: 0,
@@ -379,27 +391,35 @@ async function renderDecks() {
   decks.sort((a, b) => a.name.localeCompare(b.name, 'de'));
   for (const deck of decks) {
     const deckCards = cards.filter((c) => c.deckId === deck.id);
+    const active = S.isDeckActive(deck);
     const due = deckCards.filter((c) => !c.suspended && stateById.has(c.id) && S.isDue(stateById.get(c.id), now)).length;
+    const paused = deckCards.filter((c) => c.suspended).length;
     const open = app.expandedDecks.has(deck.id);
-    const meta = `${deckCards.length} Karte${deckCards.length === 1 ? '' : 'n'} · ${due} fällig`;
+    const meta = `${deckCards.length} Karte${deckCards.length === 1 ? '' : 'n'} · ${active ? `${due} fällig` : 'inaktiv'}${paused ? ` · ${paused} pausiert` : ''}`;
+    // Schalter aktiv/inaktiv: Klicks darauf klappen das Deck nicht auf.
+    const switchInput = el('input', { type: 'checkbox', 'aria-label': `Deck „${deck.name}" aktiv`, onchange: (e) => setDeckActive(deck, e.target.checked) });
+    switchInput.checked = active;
+    const toggle = el('label', { class: 'switch', onclick: (e) => e.stopPropagation() }, [switchInput, el('span')]);
     const head = el('div', { class: 'deck-head', onclick: () => { app.expandedDecks.has(deck.id) ? app.expandedDecks.delete(deck.id) : app.expandedDecks.add(deck.id); renderDecks(); } }, [
       el('span', { class: 'name', text: deck.name }),
       el('span', { class: 'meta', text: meta }),
+      toggle,
       el('span', { class: 'muted', text: open ? '▾' : '▸' }),
     ]);
-    const node = el('div', { class: 'deck', dataset: { deckId: deck.id } }, [head]);
+    const node = el('div', { class: `deck${active ? '' : ' inactive'}`, dataset: { deckId: deck.id, active: active ? 'true' : 'false' } }, [head]);
     if (open) {
       const actions = el('div', { class: 'deck-actions' }, [
         el('button', { type: 'button', class: 'btn small', text: '+ Karte', onclick: () => { app.lastDeckId = deck.id; go('#karte'); } }),
         el('button', { type: 'button', class: 'btn small', text: 'Umbenennen', onclick: () => renameDeck(deck) }),
+        el('button', { type: 'button', class: 'btn small', text: 'Exportieren', onclick: () => exportDeck(deck, deckCards) }),
         el('button', { type: 'button', class: 'btn small danger', text: 'Löschen', onclick: () => deleteDeck(deck, deckCards.length) }),
       ]);
       const ul = el('ul', { class: 'card-list' });
-      deckCards.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+      deckCards.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '') || a.id.localeCompare(b.id));
       for (const c of deckCards) {
-        ul.append(el('li', { dataset: { cardId: c.id }, onclick: () => go(`#karte/${c.id}`) }, [
+        ul.append(el('li', { class: c.suspended ? 'paused' : '', dataset: { cardId: c.id }, onclick: () => go(`#karte/${c.id}`) }, [
           el('span', { class: 'front', text: c.type === 'cloze' ? parseCloze(c.front).map((p) => (p.cloze !== undefined ? `[${p.cloze}]` : p.text)).join('') : c.front }),
-          el('span', { class: 'back', text: c.type === 'cloze' ? TYPE_LABELS.cloze : c.back }),
+          el('span', { class: 'back', text: `${c.suspended ? '⏸ ' : ''}${c.type === 'cloze' ? TYPE_LABELS.cloze : c.back}` }),
         ]));
       }
       if (!deckCards.length) ul.append(el('li', { class: 'muted', text: 'Keine Karten in diesem Deck.' }));
@@ -413,10 +433,27 @@ async function createDeck() {
   const name = await promptDialog('Name des neuen Decks', '', { okLabel: 'Anlegen' });
   if (!name) return null;
   const ts = new Date().toISOString();
-  const deck = { id: newId('d-'), name, createdAt: ts, updatedAt: ts };
+  const deck = { id: newId('d-'), name, createdAt: ts, updatedAt: ts, active: true, tags: [] };
   await app.db.saveDeck(deck);
   toast(`Deck „${name}" angelegt`);
   return deck;
+}
+
+async function setDeckActive(deck, active) {
+  await app.db.saveDeck({ ...deck, active, updatedAt: new Date().toISOString() });
+  toast(active ? `„${deck.name}" ist aktiv` : `„${deck.name}" ist pausiert – keine Karten in der Session`);
+  renderDecks();
+}
+
+/** Ein einzelnes Deck im Deckformat teilen – ohne Lernzustand. Nicht die Sicherung. */
+async function exportDeck(deck, deckCards) {
+  const data = deckToFile(deck, deckCards);
+  const name = deckFileName(deck);
+  const file = new File([JSON.stringify(data, null, 1)], name, { type: 'application/json' });
+  const result = await shareFile(file);
+  if (result === 'aborted') return;
+  const n = data.cards.length;
+  toast(result === 'download' ? `Teilen nicht möglich – ${name} als Download angeboten.` : `Deck exportiert: ${n} Karte${n === 1 ? '' : 'n'} in ${name}`, 3500);
 }
 
 async function renameDeck(deck) {
@@ -488,6 +525,8 @@ async function renderKarte(cardId) {
     $('f-hint').value = card.hint || '';
     $('f-tags').value = (card.tags || []).join(', ');
     $('f-both').checked = false;
+    $('f-suspended').checked = !!card.suspended;
+    $('f-suspended-field').hidden = false;
     $('btn-card-cancel').hidden = false;
     $('btn-card-delete').hidden = false;
     $('btn-card-save').textContent = 'Änderung speichern';
@@ -496,6 +535,8 @@ async function renderKarte(cardId) {
     await fillDeckSelect();
     for (const r of radios) r.disabled = false;
     clearCardForm();
+    $('f-suspended').checked = false;
+    $('f-suspended-field').hidden = true;
     $('btn-card-cancel').hidden = true;
     $('btn-card-delete').hidden = true;
     $('btn-card-save').textContent = 'Speichern';
@@ -531,9 +572,10 @@ async function saveCard(event) {
   if (app.editingCardId) {
     const old = await app.db.getCard(app.editingCardId);
     if (!old) { toast('Karte nicht gefunden'); go('#decks'); return; }
-    const updated = { ...old, deckId, front: front.trim(), back: type === 'cloze' ? '' : back.trim(), example: example.trim(), hint: hint.trim(), tags, updatedAt: now.toISOString() };
+    const suspended = $('f-suspended').checked;
+    const updated = { ...old, deckId, front: front.trim(), back: type === 'cloze' ? '' : back.trim(), example: example.trim(), hint: hint.trim(), tags, suspended, updatedAt: now.toISOString() };
     await app.db.saveCards([updated]);
-    toast('Änderung gespeichert');
+    toast(suspended && !old.suspended ? 'Gespeichert – Karte ist pausiert' : 'Änderung gespeichert');
     if (app.session && !app.session.finished) go('#session'); else go('#decks');
     return;
   }
@@ -571,6 +613,7 @@ async function deleteCurrentCard() {
 async function renderEinstellungen() {
   $('s-retention').value = String(app.settings.requestRetention.toFixed(2)).replace('.', ',');
   $('s-limit').value = String(app.settings.dailyLimit);
+  $('s-new-limit').value = String(app.settings.newLimit);
   $('s-typing').checked = !!app.settings.typeAnswerVocab;
   $('s-last-backup').textContent = app.settings.lastBackupAt ? formatDateTime(app.settings.lastBackupAt) : 'noch nie';
   $('s-card-count').textContent = String(await app.db.count('cards'));
@@ -596,6 +639,15 @@ async function saveLimit() {
   toast(`Tageslimit ${value}`);
 }
 
+async function saveNewLimit() {
+  const n = parseInt($('s-new-limit').value, 10);
+  const value = Number.isFinite(n) ? Math.min(999, Math.max(0, n)) : 10;
+  $('s-new-limit').value = String(value);
+  app.settings.newLimit = value;
+  await app.db.setSetting('newLimit', value);
+  toast(`Neue Karten pro Tag: ${value}`);
+}
+
 async function saveTyping() {
   app.settings.typeAnswerVocab = $('s-typing').checked;
   await app.db.setSetting('typeAnswerVocab', app.settings.typeAnswerVocab);
@@ -603,31 +655,40 @@ async function saveTyping() {
 
 /* ---- Sicherung ---- */
 
+/**
+ * Datei über das iOS-Teilen-Blatt anbieten. Ohne Teilen-Blatt (Browser ohne Web
+ * Share, oder die Aktivierung war verstrichen) als Download – ob der wirklich
+ * gespeichert wurde, sieht die App nicht.
+ * @returns {Promise<'shared'|'download'|'aborted'>}
+ */
+async function shareFile(file) {
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: file.name });
+      return 'shared';
+    } catch (err) {
+      if (err && err.name === 'AbortError') return 'aborted';
+      // Teilen nicht möglich: auf Download ausweichen.
+    }
+  }
+  const url = URL.createObjectURL(file);
+  const a = el('a', { href: url, download: file.name });
+  document.body.append(a);
+  a.click();
+  setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 10_000);
+  return 'download';
+}
+
 async function exportBackup() {
   const now = new Date();
   const data = await app.db.dumpAll();
   const json = JSON.stringify(buildBackup({ ...data, appVersion: APP_VERSION, now }), null, 1);
   const name = backupFileName(now);
   const file = new File([json], name, { type: 'application/json' });
-  let delivered = false;
-  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: name });
-      delivered = true;
-    } catch (err) {
-      if (err && err.name === 'AbortError') return; // abgebrochen – keine Sicherung
-      // Teilen nicht möglich (z. B. Aktivierung abgelaufen): auf Download ausweichen.
-    }
-  }
-  if (!delivered) {
-    // Kein Teilen-Blatt (Browser ohne Web Share, oder die Aktivierung war verstrichen):
-    // Datei als Download anbieten. Ob sie wirklich gespeichert wurde, sieht die App
-    // nicht – deshalb zählt das nicht als bestätigte Sicherung.
-    const url = URL.createObjectURL(file);
-    const a = el('a', { href: url, download: name });
-    document.body.append(a);
-    a.click();
-    setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 10_000);
+  const result = await shareFile(file);
+  if (result === 'aborted') return; // abgebrochen – keine Sicherung
+  if (result === 'download') {
+    // Ein Download zählt nicht als bestätigte Sicherung.
     toast(`Teilen nicht möglich – ${name} als Download angeboten. Prüfe in „Dateien", ob sie da ist.`, 5000);
     return;
   }
@@ -635,6 +696,7 @@ async function exportBackup() {
   app.settings.lastBackupAt = ts;
   await app.db.setSetting('lastBackupAt', ts);
   if (!$('screen-einstellungen').hidden) $('s-last-backup').textContent = formatDateTime(ts);
+  $('heute-backup').hidden = true;
   toast('Sicherung erstellt');
 }
 
@@ -690,6 +752,161 @@ async function importBackupFile(file) {
     el('button', { type: 'button', class: 'btn', id: 'btn-import-merge', text: 'Zusammenführen', onclick: () => run('merge') }),
     el('button', { type: 'button', class: 'btn danger', id: 'btn-import-replace', text: 'Ersetzen', onclick: () => run('replace') }),
   ]));
+}
+
+/* =========================================================================
+ * 3b. Importieren – Datei wählen, Format erkennen, prüfen, Vorschau, Zieldeck, bestätigen
+ * ========================================================================= */
+
+function resetImportView() {
+  $('imp-error').hidden = true;
+  $('imp-ask').hidden = true;
+  $('imp-preview').hidden = true;
+}
+
+function resetImport() {
+  app.imp = null;
+  resetImportView();
+}
+
+function importError(text) {
+  resetImportView();
+  $('imp-error').textContent = text;
+  $('imp-error').hidden = false;
+}
+
+async function renderImportieren() {
+  if (app.imp?.parsed) await renderImportPreview();
+  else if (!app.imp) resetImportView();
+}
+
+/** Schritt 1 und 2: Datei lesen, Format am Inhalt erkennen, bei Mehrdeutigkeit fragen. */
+async function importPickFile(file) {
+  resetImport();
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const det = detectFormat({ name: file.name, bytes });
+  if (det.format === 'zip') return importError('ZIP- und XLSX-Dateien kann die App noch nicht lesen (siehe docs/phase-2.md, Schritt 1). Bitte eine JSON- oder CSV-Datei wählen.');
+  if (det.format === 'backup') return importError('Das ist eine Sicherung der ganzen App, kein Kartenstapel. Sicherungen spielst du unter Einstellungen → „Sicherung importieren" ein.');
+  if (det.format === 'unknown') return importError(`${det.reason} Erwartet wird eine JSON- oder CSV-Datei im Deckformat.`);
+  app.imp = { fileName: file.name, text: det.text, format: det.format, separator: det.separator || ';' };
+  if (det.candidates) {
+    const box = $('imp-ask-options');
+    box.replaceChildren();
+    for (const sep of det.candidates) {
+      box.append(el('button', { type: 'button', class: 'btn', dataset: { separator: sep }, text: SEPARATORS[sep], onclick: () => {
+        app.imp.separator = sep;
+        $('imp-ask').hidden = true;
+        importParse().catch((err) => importError(`Datei ließ sich nicht lesen: ${err.message}`));
+      } }));
+    }
+    $('imp-ask').hidden = false;
+    return;
+  }
+  await importParse();
+}
+
+/** Schritt 3: parsen und gegen das Schema prüfen. Fehler je Karte werden gesammelt, nicht abgebrochen. */
+async function importParse() {
+  const imp = app.imp;
+  let parsed;
+  try {
+    parsed = parseDeck(imp.text, { format: imp.format, fileName: imp.fileName, separator: imp.separator });
+  } catch (err) {
+    if (err instanceof DeckFormatError) return importError(err.message);
+    throw err;
+  }
+  imp.parsed = parsed;
+  imp.target = '__new__';
+  imp.newName = parsed.deck.name;
+  await renderImportPreview();
+}
+
+/** Schritt 4 und 5: Vorschau – bevor irgendetwas geschrieben wird – und Zieldeck. */
+async function renderImportPreview() {
+  const imp = app.imp;
+  const parsed = imp.parsed;
+  const decks = (await app.db.listDecks()).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  const sel = $('imp-deck');
+  sel.replaceChildren(el('option', { value: '__new__', text: 'Neues Deck' }));
+  for (const d of decks) sel.append(el('option', { value: d.id, text: S.isDeckActive(d) ? d.name : `${d.name} (inaktiv)` }));
+  if (!decks.some((d) => d.id === imp.target)) imp.target = '__new__';
+  sel.value = imp.target;
+  $('imp-deck-name-field').hidden = imp.target !== '__new__';
+  $('imp-deck-name').value = imp.newName;
+  const targetDeck = decks.find((d) => d.id === imp.target) || null;
+  const existing = targetDeck ? await app.db.listCards(targetDeck.id) : [];
+  const plan = planImport(parsed.cards, existing);
+  imp.plan = plan;
+
+  $('imp-source').textContent = `${imp.fileName} · ${parsed.format === 'json' ? 'JSON' : `CSV, Trennzeichen ${SEPARATORS[imp.separator]}`}`;
+  $('imp-total').textContent = String(parsed.total);
+  $('imp-new').textContent = String(plan.fresh.length);
+  $('imp-dupes').textContent = String(plan.duplicates.length);
+  $('imp-faulty').textContent = String(parsed.errors.length);
+  const sameName = !targetDeck && decks.find((d) => d.name.trim().toLowerCase() === (imp.newName || '').trim().toLowerCase());
+  $('imp-deck-note').textContent = !targetDeck
+    ? `Das neue Deck ist zunächst inaktiv. Schalte es unter Decks ein, sobald du den Stoff im Arbeitsbuch hattest.${sameName ? ` Ein Deck „${sameName.name}" gibt es schon – wähle es oben als Zieldeck, wenn die Karten dorthin sollen.` : ''}`
+    : S.isDeckActive(targetDeck)
+      ? `„${targetDeck.name}" ist aktiv – die neuen Karten kommen ab sofort dran, höchstens ${app.settings.newLimit} pro Tag.`
+      : `„${targetDeck.name}" ist inaktiv – die Karten warten, bis du das Deck unter Decks einschaltest.`;
+
+  const ul = $('imp-sample');
+  ul.replaceChildren();
+  for (const c of parsed.cards.slice(0, 10)) {
+    ul.append(el('li', {}, [el('span', { class: 'front', text: cardPreviewText(c) }), el('span', { class: 'type', text: TYPE_LABELS[c.type] })]));
+  }
+  if (!parsed.cards.length) ul.append(el('li', { class: 'muted', text: 'Keine gültige Karte in der Datei.' }));
+  $('imp-sample-title').textContent = parsed.cards.length > 10 ? 'Die ersten zehn Karten' : parsed.cards.length === 1 ? 'Die Karte' : `Alle ${parsed.cards.length} Karten`;
+
+  const errs = $('imp-errors');
+  errs.replaceChildren();
+  for (const e of parsed.errors) errs.append(el('li', { text: e }));
+  $('imp-errors-title').hidden = parsed.errors.length === 0;
+  errs.hidden = parsed.errors.length === 0;
+
+  const n = plan.fresh.length;
+  const btn = $('btn-imp-confirm');
+  btn.textContent = n === 0 ? 'Nichts zu importieren' : n === 1 ? '1 Karte importieren' : `${n} Karten importieren`;
+  btn.disabled = n === 0 || !!imp.saving;
+  $('imp-error').hidden = true;
+  $('imp-preview').hidden = false;
+}
+
+/** Schritt 6: bestätigen. Eine einzige Transaktion – bricht etwas ab, ist der Bestand unverändert. */
+async function confirmImport() {
+  const imp = app.imp;
+  if (!imp?.plan || imp.saving || !imp.plan.fresh.length) return;
+  let deck = null;
+  let deckId = imp.target;
+  if (deckId === '__new__') {
+    const name = $('imp-deck-name').value.trim();
+    if (!name) { toast('Bitte einen Namen für das neue Deck eingeben.'); $('imp-deck-name').focus(); return; }
+    const ts = new Date().toISOString();
+    // Frisch importierte Decks sind inaktiv, bis der Stoff im Arbeitsbuch dran war.
+    deck = { id: newId('d-'), name, createdAt: ts, updatedAt: ts, active: false, tags: imp.parsed.deck.tags || [] };
+    deckId = deck.id;
+  }
+  const now = new Date();
+  const cards = buildImportRecords(imp.plan.fresh, { deckId, now });
+  // Alle sofort fällig (Reihenfolge kommt aus createdAt) – nicht createdAt+i ms, sonst
+  // wären die hinteren Karten für einen Augenblick „noch nicht fällig".
+  const states = cards.map((c) => S.newState(c.id, now));
+  imp.saving = true;
+  $('btn-imp-confirm').disabled = true;
+  try {
+    await app.db.importCards({ deck, cards, states });
+  } catch (err) {
+    imp.saving = false;
+    $('btn-imp-confirm').disabled = false;
+    $('imp-error').textContent = `Import fehlgeschlagen, nichts wurde geändert: ${err.message}`;
+    $('imp-error').hidden = false;
+    return;
+  }
+  const n = cards.length;
+  app.expandedDecks.add(deckId);
+  resetImport();
+  toast(deck ? `${n} Karte${n === 1 ? '' : 'n'} importiert – Deck „${deck.name}" ist noch inaktiv` : `${n} Karte${n === 1 ? '' : 'n'} importiert`, 3500);
+  go('#decks');
 }
 
 /* =========================================================================
@@ -789,6 +1006,7 @@ async function checkForUpdate() {
 function bindEvents() {
   $('btn-lernen').addEventListener('click', () => startSession('learn'));
   $('btn-ueben').addEventListener('click', () => startSession('practice'));
+  $('btn-heute-backup').addEventListener('click', exportBackup);
 
   // Session
   $('session-card').addEventListener('click', () => reveal($('typing').hidden ? undefined : $('typing-input').value));
@@ -817,6 +1035,26 @@ function bindEvents() {
   // Decks
   $('btn-deck-neu').addEventListener('click', async () => { if (await createDeck()) renderDecks(); });
 
+  // Importieren
+  $('imp-file').addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) importPickFile(file).catch((err) => importError(`Datei ließ sich nicht lesen: ${err.message}`));
+  });
+  $('imp-deck').addEventListener('change', () => {
+    if (!app.imp) return;
+    app.imp.target = $('imp-deck').value;
+    renderImportPreview().catch((err) => importError(err.message));
+  });
+  $('imp-deck-name').addEventListener('change', () => {
+    if (!app.imp) return;
+    app.imp.newName = $('imp-deck-name').value;
+    renderImportPreview().catch((err) => importError(err.message));
+  });
+  $('imp-deck-name').addEventListener('input', () => { if (app.imp) app.imp.newName = $('imp-deck-name').value; });
+  $('btn-imp-confirm').addEventListener('click', () => confirmImport().catch((err) => importError(`Import fehlgeschlagen, nichts wurde geändert: ${err.message}`)));
+  $('btn-imp-cancel').addEventListener('click', () => { resetImport(); go('#decks'); });
+
   // Karte
   $('card-form').addEventListener('submit', (e) => saveCard(e).catch((err) => { $('f-error').textContent = err.message; $('f-error').hidden = false; }));
   $('f-type').addEventListener('change', () => applyTypeToForm(selectedType()));
@@ -832,6 +1070,7 @@ function bindEvents() {
   // Einstellungen
   $('s-retention').addEventListener('change', saveRetention);
   $('s-limit').addEventListener('change', saveLimit);
+  $('s-new-limit').addEventListener('change', saveNewLimit);
   $('s-typing').addEventListener('change', saveTyping);
   $('btn-export').addEventListener('click', exportBackup);
   $('s-import').addEventListener('change', (e) => {

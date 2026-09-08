@@ -4,10 +4,13 @@ Meine Vokabelapp, um brasilianisches Portugiesisch offline mit Karteikarten zu l
 Eine installierbare Web-App (PWA): Sie liegt als Icon auf dem iPhone, läuft ohne
 Internet und speichert allen Lernfortschritt nur auf dem Gerät.
 
-**Stand: Phase 1 – nutzbarer Kern.** Karten anlegen, Decks verwalten, mit FSRS
-terminierte Lernsessions, Sicherung als JSON-Datei. Import von Kartenstapeln (Phase 2)
-und der Pendel-Modus mit Sprachausgabe (Phase 3) folgen; der vollständige Auftrag steht
-in `AUFTRAG.md`, die Vorgaben dieser Phase in `docs/phase-1.md`.
+**Stand: Phase 2 – Import.** Kartenstapel als JSON oder CSV importieren, mit Vorschau
+und Dublettenprüfung; Tageslimit für neue Karten; Decks aktiv/inaktiv schalten; Karten
+pausieren; ein Deck als Datei exportieren; Erinnerung an die Sicherung. ZIP und XLSX
+warten auf eine Entscheidung (siehe `docs/phase-2.md`, Schritt 1). Der Pendel-Modus
+mit Sprachausgabe ist Phase 3. Der vollständige Auftrag steht in `AUFTRAG.md`, die
+Vorgaben der Phasen in `docs/phase-1.md` und `docs/phase-2.md`, das Dateiformat für
+Kartenstapel in `docs/deck-format.md`.
 
 Adresse der App: **https://warumdu.github.io/estudar/**
 
@@ -17,9 +20,11 @@ Unten vier Reiter: **Heute · Decks · Karte · Einstellungen**. Die Lernsession
 sich aus „Heute" und blendet die Reiter aus, bis sie beendet ist.
 
 **Heute.** Die große Zahl ist, was heute zu lernen ist. „Lernen" startet die Session.
-Darunter: wie viele Karten heute schon bewertet wurden und wann die nächste fällig wird.
-Ist nichts fällig, steht das dort, und „Trotzdem üben" zeigt Karten ohne Wirkung auf
-die Terminierung.
+Darunter getrennt: **fällige Wiederholungen** und **neue Karten** (jeweils „10 von 300",
+wenn das Tageslimit greift), wie viele Karten heute schon bewertet wurden und wann die
+nächste fällig wird. Ist nichts fällig, steht das dort, und „Trotzdem üben" zeigt Karten
+ohne Wirkung auf die Terminierung. Liegt die letzte Sicherung mehr als sieben Tage
+zurück, steht hier eine ruhige Zeile mit dem Knopf „Jetzt sichern".
 
 **Session.** Frage antippen (irgendwo) zeigt die Lösung. Dann vier Knöpfe:
 **Nochmal · Schwer · Gut · Leicht**. Über jedem steht das Intervall, das er auslöst
@@ -32,24 +37,45 @@ Akzente und Groß-/Kleinschreibung zählen nicht als Fehler, die Abweichung wird
 rot markiert. Der Stift oben rechts öffnet die aktuelle Karte zum Bearbeiten, das ×
 beendet die Session. Am Ende: Kartenzahl, Trefferquote, Dauer, „Sicherung jetzt".
 
-**Decks.** Jedes Deck mit Kartenzahl und Fälligkeit. Antippen klappt die Karten auf;
-dort: „+ Karte", „Umbenennen", „Löschen" (mit Rückfrage). Eine Karte antippen öffnet
-sie zum Bearbeiten.
+**Decks.** Jedes Deck mit Kartenzahl und Fälligkeit und einem **Schalter aktiv/inaktiv**.
+Ein inaktives Deck liefert keine Karten in die Session, behält aber seinen Lernzustand –
+so bleibt Stoff, den du im Arbeitsbuch noch nicht hattest, außen vor. Antippen klappt
+die Karten auf; dort: „+ Karte", „Umbenennen", „Exportieren", „Löschen" (mit Rückfrage).
+Eine Karte antippen öffnet sie zum Bearbeiten; pausierte Karten sind durchgestrichen
+mit ⏸. Oben rechts: **Importieren**.
+
+**Importieren.** Datei wählen (JSON oder CSV im Deckformat, siehe `docs/deck-format.md`).
+Die App erkennt das Format am Inhalt, fragt bei unklarem Trennzeichen nach, prüft jede
+Karte und zeigt **erst eine Vorschau**: Einträge in der Datei, davon neu, Dubletten,
+fehlerhaft, dazu die ersten zehn Karten im Klartext und jede fehlerhafte Zeile mit Grund
+(„Zeile 14: Feld back fehlt"). Fehlerhafte Zeilen werden übersprungen, sie brechen den
+Import nicht ab. Zieldeck: neues Deck (Name aus der Datei vorbelegt) oder ein bestehendes.
+Dubletten – gleiche Vorder- und Rückseite im Zieldeck, ohne Rücksicht auf Leerzeichen,
+Groß-/Kleinschreibung und Akzente – werden übersprungen, nie überschrieben. Der
+Schreibvorgang ist eine einzige Transaktion: bricht etwas ab, bleibt der Bestand wie er
+war. Ein neu angelegtes Deck ist zunächst **inaktiv**; importierst du in ein bestehendes
+aktives Deck, bleibt es aktiv.
+
+**Exportieren.** In den Deck-Aktionen: ein einzelnes Deck als JSON im Deckformat über das
+Teilen-Blatt, ohne Lernzustand – zum Weitergeben oder um es in einem Chat überarbeiten zu
+lassen. Das ist **nicht** die Sicherung (die liegt in den Einstellungen und enthält alles).
 
 **Karte.** Deck, Typ (Vokabel, Lückentext, Konjugation, Satz), Vorder- und Rückseite,
 optional Beispiel, Hinweis und Tags. Nach „Speichern" bleibt die Maske offen und leer,
 Deck und Typ bleiben stehen – zehn Vokabeln am Stück, ohne zurückzunavigieren.
 Bei Vokabeln erzeugt „beide Richtungen" zwei getrennt terminierte Karten, die nie am
 selben Tag drankommen. Lückentexte schreibt man so: `Ontem eu {{c1::fui}} ao mercado.`
-Im Deck-Auswahlfeld lässt sich mit „+ Neues Deck …" direkt ein Deck anlegen.
+Im Deck-Auswahlfeld lässt sich mit „+ Neues Deck …" direkt ein Deck anlegen. Beim
+Bearbeiten gibt es „Karte pausiert": Die Karte kommt nicht mehr in die Session, bis du
+den Haken entfernst; ihr Zustand bleibt.
 
 **Einstellungen.** Zielretention (Standard 0,90), Tageslimit für Wiederholungen
-(Standard 40), Eingabefeld für Vokabeln DE→PT, Sicherung (Export/Import), Status der
-App, Version und „Nach neuer Fassung suchen".
+(Standard 40), **neue Karten pro Tag** (Standard 10), Eingabefeld für Vokabeln DE→PT,
+Sicherung (Export/Import), Status der App, Version und „Nach neuer Fassung suchen".
 
 Beim ersten Start liegt ein Deck **„Probe (löschbar)"** mit 20 Karten bereit
 (15 Vokabeln, 5 Lückentexte zum pretérito perfeito). Das ist Prüfmaterial. Nach dem
-Löschen kommt es nicht wieder; der echte Wortschatz kommt in Phase 2 per Import.
+Löschen kommt es nicht wieder; der echte Wortschatz kommt per Import.
 
 ### Terminierung
 
@@ -58,7 +84,9 @@ Der Wiederholungsalgorithmus ist **FSRS** über `ts-fsrs` 5.4.2 (unverändert un
 im Protokoll, damit die Parameter später auf meine Daten optimiert werden können.
 Das Tageslimit gilt für Wiederholungen: Nach einer mehrtägigen Pause zeigt die App die
 am längsten überfälligen zuerst und verteilt den Rest auf die Folgetage. Lernschritte
-und neue Karten zählen nicht gegen das Limit.
+zählen nicht gegen das Limit. **Neue Karten** haben ein eigenes Limit (Standard 10 pro
+Tag) und kommen in Eingabe- bzw. Importreihenfolge, nie zufällig: Ein Import von
+300 Karten zeigt am ersten Tag nur 10 davon.
 
 ## Wichtig zu wissen: iOS kann die Daten einer Web-App löschen
 
@@ -100,15 +128,15 @@ hier im Original.
 ### A. Den Arbeitsstand in `main` übernehmen
 
 1. Öffne https://github.com/warumdu/estudar in Safari.
-2. Oben erscheint ein gelber Kasten „**claude/phase-1-core-o436z3** had recent pushes"
+2. Oben erscheint ein gelber Kasten „**claude/phase-2-import-obkclr** had recent pushes"
    mit dem Knopf **Compare & pull request**. Tippe darauf.
    Fehlt der Kasten: Reiter **Pull requests** → **New pull request** → bei
-   „compare:" den Zweig `claude/phase-1-core-o436z3` wählen (bei „base:" bleibt `main`).
+   „compare:" den Zweig `claude/phase-2-import-obkclr` wählen (bei „base:" bleibt `main`).
 3. Tippe **Create pull request** (Titel kann bleiben). Erscheint danach ein
    Formular, dort noch einmal **Create pull request**.
 4. Tippe **Merge pull request**, dann **Confirm merge**. Der Stand ist jetzt in `main`.
-5. GitHub Pages ist seit Phase 0 eingeschaltet und baut die Seite in wenigen Minuten
-   neu (Reiter **Actions** zeigt „pages build and deployment"; grüner Haken = fertig).
+5. GitHub Pages baut die Seite in wenigen Minuten neu (Reiter **Actions** zeigt
+   „pages build and deployment"; grüner Haken = fertig).
 
 ### B. Die neue Fassung aufs iPhone holen
 
@@ -116,31 +144,65 @@ hier im Original.
    „Neue Fassung verfügbar – **Aktualisieren**". Tippe darauf; die App lädt einmal neu.
    Erscheint der Hinweis nicht: Einstellungen → **Nach neuer Fassung suchen**, oder
    die App schließen (nach oben wischen) und neu vom Icon starten.
-7. In den Einstellungen muss bei **Version 0.1.0** stehen und bei **Offline: bereit ✓**.
+7. In den Einstellungen muss bei **Version 0.2.0** stehen und bei **Offline: bereit ✓**.
    Erst dann ist die neue Fassung vollständig im Gerät und läuft auch im Flugmodus.
+   Dein Bestand aus Phase 1 bleibt dabei erhalten; die neue Einstellung „neue Karten
+   pro Tag" steht auf 10.
 
-Liegt das Icon noch nicht auf dem iPhone: in Safari https://warumdu.github.io/estudar/
-öffnen → **Teilen** → **Zum Home-Bildschirm** → **Hinzufügen**, dann die App einmal
-mit Internet vom Icon starten, bis „Offline: bereit ✓" da steht.
+### C. Die Beispieldateien auf das iPhone holen
 
-### C. Prüfliste Phase 1 (auf dem iPhone, in der App vom Icon)
+Die Dateien liegen im Repository unter `docs/beispiele/` und werden von GitHub Pages
+mit ausgeliefert. Je Datei in **Safari auf dem iPhone**:
 
-1. **Karte anlegen, App schließen, neu starten.** Reiter Karte → Deutsch und Português
-   ausfüllen → Speichern. App nach oben wegwischen, vom Icon neu starten → Decks →
-   Probe-Deck antippen: die Karte steht in der Liste.
-2. **Session mit dem Probe-Deck bis zum Ende.** Heute → Lernen → jede Karte antippen,
-   bewerten, bis die Zusammenfassung mit Kartenzahl, Trefferquote und Dauer erscheint.
-   („Nochmal"/„Gut" bringen die Karte nach ein paar Karten noch einmal – das ist
-   der Lernschritt, kein Fehler. „Leicht" schließt sie für heute ab.)
-3. **Flugmodus.** Flugmodus an, App schließen, vom Icon starten, Heute → Lernen (oder
-   „Trotzdem üben"), Lösung aufdecken, bewerten. Einstellungen zeigt „Offline: bereit ✓".
-4. **Sicherung.** Einstellungen → Sicherung exportieren → im Teilen-Blatt „In Dateien
-   sichern". Dann Decks → Probe-Deck → Löschen → bestätigen. Dann Einstellungen →
-   Sicherung importieren → die Datei wählen → Vorschau lesen → **Ersetzen** →
-   bestätigen. Decks zeigt das Probe-Deck wieder mit Lernfortschritt.
-5. **Zielretention.** In einer Session das Intervall über „Gut" merken, Session beenden,
-   Einstellungen → Zielretention auf 0,95 → Lernen: die Intervalle auf den Knöpfen sind
-   kürzer.
+8. Adresse öffnen, z. B. https://warumdu.github.io/estudar/docs/beispiele/beispiel-vokabeln.json
+   (ebenso `test-300-karten.json`, `kaputt.json`, `teils-fehlerhaft.csv`, `beispiel-vokabeln.csv`).
+9. Safari fragt „Möchtest du … laden?" → **Laden**. Die Datei liegt danach in
+   **Dateien → Downloads**. Zeigt Safari den Text stattdessen direkt an: Teilen-Symbol →
+   **In Dateien sichern**.
+
+### D. Prüfliste Phase 2 (auf dem iPhone, in der App vom Icon)
+
+1. **Import einer JSON-Datei mit Vorschau.** Decks → Importieren → Datei wählen →
+   `beispiel-vokabeln.json`. Die Vorschau zeigt 14 Einträge, 16 neue Karten (zwei sind
+   in beide Richtungen), 0 Dubletten, 0 fehlerhaft, die ersten zehn Karten im Klartext,
+   Zieldeck „Neues Deck" mit dem Namen „Beispiel · Módulo 2 · Dia 03". Tippe
+   **16 Karten importieren**. Unter Decks steht das Deck mit „16 Karten · inaktiv" und
+   ausgeschaltetem Schalter. „Heute" hat sich nicht verändert.
+2. **Dieselbe Datei ein zweites Mal.** Importieren → dieselbe Datei → bei Zieldeck
+   „Beispiel · Módulo 2 · Dia 03" wählen: 0 neue, 16 Dubletten, der Knopf sagt
+   „Nichts zu importieren". Abbrechen.
+3. **Absichtlich kaputte Datei.** Importieren → `kaputt.json`: rote Meldung „kein gültiges
+   JSON – vermutlich abgeschnitten", keine Vorschau, nichts wurde geschrieben (Decks
+   unverändert). Dann `teils-fehlerhaft.csv`: Vorschau mit 6 Einträgen, 2 neue,
+   4 fehlerhaft, jede Fehlerzeile mit Grund („Zeile 3: Feld back fehlt" …). Import legt
+   ein Deck „teils-fehlerhaft" mit 2 Karten an.
+4. **300 Karten.** Importieren → `test-300-karten.json` → 300 neue → importieren. Decks →
+   Schalter bei „Test · 300 Karten (löschbar)" einschalten; alle anderen Decks für diesen
+   Test ausschalten (sonst kommen deren neue Karten zuerst, weil sie älter sind). Heute
+   zeigt bei „Neue Karten" **10 von 300**. Lernen: die erste Karte ist „der Montag", dann
+   „der Dienstag" – Dateireihenfolge, nicht Zufall. Einstellungen → „Neue Karten pro Tag"
+   auf 25: Heute zeigt 25 (minus die heute schon bewerteten). Wieder auf 10 stellen,
+   die anderen Decks wieder einschalten.
+5. **Inaktives Deck.** Decks → Schalter bei „Test · 300 Karten" ausschalten → Heute zeigt
+   die Karten dieses Decks nicht mehr (bei sonst leerem Bestand: „Nichts fällig", ohne
+   „Trotzdem üben"). Einschalten → sie sind wieder da, der Fortschritt der schon
+   bewerteten Karten ist erhalten.
+6. **Deckexport und Reimport.** Decks → „Beispiel · Módulo 2 · Dia 03" antippen →
+   **Exportieren** → im Teilen-Blatt „In Dateien sichern" (Datei
+   `deck-beispiel-modulo-2-dia-03.json`). Dann Importieren → diese Datei wählen: 14
+   Einträge, 16 neue gegen ein neues Deck; wählst du als Zieldeck das Beispiel-Deck, sind
+   es 16 Dubletten. Importiere in ein neues Deck „Kopie" – 16 Karten, inaktiv.
+7. **Karte pausieren.** Decks → ein Deck aufklappen → Karte antippen → „Karte pausiert"
+   ankreuzen → Speichern. In der Liste ist sie durchgestrichen mit ⏸, in der Session
+   kommt sie nicht. Haken entfernen → sie ist wieder dabei.
+8. **Erinnerung an die Sicherung.** Sie erscheint auf „Heute" als ruhige Zeile mit „Jetzt
+   sichern", sobald die letzte Sicherung mehr als sieben Tage zurückliegt (oder es noch
+   nie eine gab und schon Bewertungen vorliegen). Zum Prüfen jetzt: Ist deine letzte
+   Sicherung aus Phase 1 älter als sieben Tage, steht die Zeile schon da; „Jetzt sichern"
+   → Teilen-Blatt → die Zeile verschwindet.
+
+Danach Aufräumen nach Belieben: Die Decks „Test · 300 Karten (löschbar)", „Kopie" und
+„teils-fehlerhaft" kannst du löschen.
 
 Gib mir Bescheid, was klappt und was nicht. Bis dahin baue ich nicht weiter.
 
@@ -158,21 +220,27 @@ Gib mir Bescheid, was klappt und was nicht. Bis dahin baue ich nicht weiter.
   beim ersten Laden im Cache ab und beantwortet alle Anfragen zuerst daraus. Eine neue
   Fassung wird vorgeladen und erst nach Antippen von „Aktualisieren" aktiv – nie
   selbsttätig, nie während einer Session.
+- **Deckformat.** `flashdeck/1`, beschrieben in `docs/deck-format.md`; Prüffunktion,
+  CSV-Leser, Dublettenerkennung und Export in `app/deckformat.js`. Importe schreiben
+  mit `add()` in einer Transaktion: ein Schlüssel, den es schon gibt, lässt den ganzen
+  Import scheitern statt etwas zu überschreiben.
 - **Tests** laufen nur in der Entwicklungs-VM mit Node (`npm test`): Scheduler,
-  Antwortvergleich, Kartenmodell, Sicherung (Node), dazu die Bedienabläufe der
-  Abnahmeliste, ein Offline-Test und der Update-Ablauf im Chromium, sowie Manifest,
-  Service Worker, Vendor-Prüfsummen und der CDN-Wächter. Die App selbst braucht kein Node.
+  Antwortvergleich, Kartenmodell, Sicherung, Deckformat samt Beispieldateien (Node), dazu
+  die Bedienabläufe der Abnahmelisten aus Phase 1 und 2, ein Offline-Test und der
+  Update-Ablauf im Chromium, sowie Manifest, Service Worker, Vendor-Prüfsummen und der
+  CDN-Wächter. Die App selbst braucht kein Node.
 
 ## Dateien
 
 ```
-index.html             Die fünf Bildschirme (Heute, Session, Decks, Karte, Einstellungen)
-app/main.js            Oberfläche, Session, Sicherung, Update-Hinweis
+index.html             Die Bildschirme (Heute, Session, Decks, Importieren, Karte, Einstellungen)
+app/main.js            Oberfläche, Session, Import, Export, Sicherung, Update-Hinweis
 app/db.js              IndexedDB, Schema und Migration
-app/scheduler.js       Anbindung an ts-fsrs, Klartext-Intervalle, Tagesliste
+app/scheduler.js       Anbindung an ts-fsrs, Klartext-Intervalle, Tagesliste, beide Tageslimits
 app/cards.js           Kartenmodell, Lückentext
 app/compare.js         Toleranter Antwortvergleich
-app/backup.js          Sicherung: Aufbau, Prüfung, Ersetzen/Zusammenführen
+app/backup.js          Sicherung: Aufbau, Prüfung, Ersetzen/Zusammenführen, Erinnerung
+app/deckformat.js      Deckformat flashdeck/1: Prüfen, JSON/CSV lesen, Dubletten, Export
 app/seed.js            Probe-Deck
 app/style.css          Dunkles Design
 manifest.webmanifest   App-Beschreibung für die Installation
@@ -181,6 +249,9 @@ icons/                 App-Icons (SVG-Quelle und PNG-Fassungen)
 vendor/                Bibliotheken, aus npm kopiert und gepinnt
 scripts/               Hilfsskripte für die VM (vendor kopieren, Icons rendern)
 tests/                 Node- und Browser-Tests
-docs/phase-1.md        Vorgaben dieser Phase
+docs/deck-format.md    Das Dateiformat für Kartenstapel – für andere Chats gedacht
+docs/beispiele/        Importierbare Beispieldateien, die 300-Karten-Testdatei, zwei kaputte
+docs/phase-1.md        Vorgaben der Phase 1
+docs/phase-2.md        Vorgaben der Phase 2
 AUFTRAG.md             Der vollständige Auftrag
 ```

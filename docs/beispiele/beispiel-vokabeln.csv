@@ -1,0 +1,13 @@
+﻿front;back;type;tags;example;hint
+der Hund;o cachorro;vocab;substantiv tier;O cachorro late à noite.;
+die Katze;o gato;vocab;substantiv tier;O gato dorme o dia todo.;
+das Auto;o carro;vocab;substantiv verkehr;Meu carro está na oficina.;
+der Bus;o ônibus;vocab;substantiv verkehr;Peguei o ônibus errado.;
+"die Rechnung (im Restaurant)";a conta;vocab;substantiv essen;"A conta, por favor!";im Restaurant
+sich beeilen;se apressar;vocab;verb;Precisamos nos apressar.;
+teuer;caro;vocab;adjektiv;Esse restaurante é muito caro.;
+billig;barato;vocab;adjektiv;Achei um hotel barato.;
+Ontem eu {{c1::fui}} ao mercado.;;cloze;preterito-perfeito;;ir · pretérito perfeito · eu
+Vocês {{c1::chegaram}} atrasados ontem?;;cloze;preterito-perfeito;;chegar · pretérito perfeito · vocês
+chegar · pretérito perfeito · eu;cheguei;conjugation;verb preterito-perfeito;;Achtung: g → gu vor e
+Ich bin gestern früh nach Hause gegangen.;Ontem eu fui para casa cedo.;sentence;satz;;

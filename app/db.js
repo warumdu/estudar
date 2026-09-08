@@ -17,8 +17,13 @@ export const DB_VERSION = 1;
 export const DEFAULT_SETTINGS = Object.freeze({
   requestRetention: 0.9,   // Zielretention
   dailyLimit: 40,          // Tageslimit für Wiederholungen
+  newLimit: 10,            // neue Karten pro Tag (getrennt vom Wiederholungslimit)
   typeAnswerVocab: false,  // Vokabeln DE→PT per Eingabefeld statt Antippen
 });
+
+// Decks: { id, name, createdAt, updatedAt, active, tags }. Fehlt `active` (Decks
+// aus Phase 1), gilt das Deck als aktiv – deshalb keine Schemaänderung nötig.
+// Karten haben seit Phase 2 optional `sourceId` (Kennung aus der Importdatei).
 
 export const CARD_TYPES = Object.freeze(['vocab', 'cloze', 'conjugation', 'sentence']);
 
@@ -111,9 +116,14 @@ export class Database {
     return value;
   }
 
-  /** Mehrere Schreibvorgänge in EINER Transaktion: { store: [werte…] } bzw. deletes: { store: [schlüssel…] } */
-  async write({ puts = {}, deletes = {}, clear = [] } = {}) {
-    const stores = [...new Set([...Object.keys(puts), ...Object.keys(deletes), ...clear])];
+  /**
+   * Mehrere Schreibvorgänge in EINER Transaktion: puts: { store: [werte…] },
+   * adds: { store: [werte…] } (wie puts, aber ein schon vorhandener Schlüssel
+   * bricht die ganze Transaktion ab – für Importe, die nie etwas überschreiben
+   * dürfen), deletes: { store: [schlüssel…] }, clear: [store…].
+   */
+  async write({ puts = {}, adds = {}, deletes = {}, clear = [] } = {}) {
+    const stores = [...new Set([...Object.keys(puts), ...Object.keys(adds), ...Object.keys(deletes), ...clear])];
     if (!stores.length) return;
     const tx = this.idb.transaction(stores, 'readwrite');
     const finished = done(tx);
@@ -126,6 +136,10 @@ export class Database {
       for (const [store, values] of Object.entries(puts)) {
         const os = tx.objectStore(store);
         for (const value of values) os.put(value);
+      }
+      for (const [store, values] of Object.entries(adds)) {
+        const os = tx.objectStore(store);
+        for (const value of values) os.add(value);
       }
     } catch (err) {
       // Ein ungültiger Datensatz (z. B. ohne Schlüssel) wirft synchron. Ohne abort()
@@ -176,6 +190,17 @@ export class Database {
   /** Speichert Karten und – wo angegeben – ihre Zustände in einer Transaktion. */
   async saveCards(cards, states = []) {
     await this.write({ puts: { cards, cardStates: states } });
+  }
+
+  /**
+   * Import: neues Deck (optional), Karten und Zustände in EINER Transaktion.
+   * Alles wird mit add() geschrieben – existiert ein Schlüssel schon, bricht die
+   * ganze Transaktion ab und der Bestand bleibt unverändert.
+   */
+  async importCards({ deck = null, cards, states }) {
+    const adds = { cards, cardStates: states };
+    if (deck) adds.decks = [deck];
+    await this.write({ adds });
   }
 
   /** Löscht eine Karte und ihren Zustand. Das Protokoll bleibt. */

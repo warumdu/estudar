@@ -1,0 +1,2715 @@
+{
+ "schema": "flashdeck/1",
+ "deck": {
+  "name": "Test · 300 Karten (löschbar)",
+  "front_lang": "de-DE",
+  "back_lang": "pt-BR",
+  "tags": [
+   "test",
+   "a1",
+   "a2"
+  ]
+ },
+ "cards": [
+  {
+   "id": "t300-001",
+   "type": "vocab",
+   "front": "der Montag",
+   "back": "a segunda-feira",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-002",
+   "type": "vocab",
+   "front": "der Dienstag",
+   "back": "a terça-feira",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-003",
+   "type": "vocab",
+   "front": "der Mittwoch",
+   "back": "a quarta-feira",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-004",
+   "type": "vocab",
+   "front": "der Donnerstag",
+   "back": "a quinta-feira",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-005",
+   "type": "vocab",
+   "front": "der Freitag",
+   "back": "a sexta-feira",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-006",
+   "type": "vocab",
+   "front": "der Samstag",
+   "back": "o sábado",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-007",
+   "type": "vocab",
+   "front": "der Sonntag",
+   "back": "o domingo",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-008",
+   "type": "vocab",
+   "front": "das Wochenende",
+   "back": "o fim de semana",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-009",
+   "type": "vocab",
+   "front": "heute",
+   "back": "hoje",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-010",
+   "type": "vocab",
+   "front": "gestern",
+   "back": "ontem",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-011",
+   "type": "vocab",
+   "front": "morgen (der nächste Tag)",
+   "back": "amanhã",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-012",
+   "type": "vocab",
+   "front": "vorgestern",
+   "back": "anteontem",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-013",
+   "type": "vocab",
+   "front": "übermorgen",
+   "back": "depois de amanhã",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-014",
+   "type": "vocab",
+   "front": "der Morgen",
+   "back": "a manhã",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-015",
+   "type": "vocab",
+   "front": "der Nachmittag",
+   "back": "a tarde",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-016",
+   "type": "vocab",
+   "front": "der Abend",
+   "back": "a noite",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-017",
+   "type": "vocab",
+   "front": "die Woche",
+   "back": "a semana",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-018",
+   "type": "vocab",
+   "front": "der Monat",
+   "back": "o mês",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-019",
+   "type": "vocab",
+   "front": "das Jahr",
+   "back": "o ano",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-020",
+   "type": "vocab",
+   "front": "die Stunde",
+   "back": "a hora",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-021",
+   "type": "vocab",
+   "front": "die Minute",
+   "back": "o minuto",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-022",
+   "type": "vocab",
+   "front": "früh",
+   "back": "cedo",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-023",
+   "type": "vocab",
+   "front": "spät",
+   "back": "tarde",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-024",
+   "type": "vocab",
+   "front": "jetzt",
+   "back": "agora",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-025",
+   "type": "vocab",
+   "front": "immer",
+   "back": "sempre",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-026",
+   "type": "vocab",
+   "front": "nie",
+   "back": "nunca",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-027",
+   "type": "vocab",
+   "front": "manchmal",
+   "back": "às vezes",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-028",
+   "type": "vocab",
+   "front": "oft",
+   "back": "muitas vezes",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-029",
+   "type": "vocab",
+   "front": "schon",
+   "back": "já",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-030",
+   "type": "vocab",
+   "front": "noch nicht",
+   "back": "ainda não",
+   "tags": [
+    "zeit"
+   ]
+  },
+  {
+   "id": "t300-031",
+   "type": "vocab",
+   "front": "die Familie",
+   "back": "a família",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-032",
+   "type": "vocab",
+   "front": "der Vater",
+   "back": "o pai",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-033",
+   "type": "vocab",
+   "front": "die Mutter",
+   "back": "a mãe",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-034",
+   "type": "vocab",
+   "front": "die Eltern",
+   "back": "os pais",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-035",
+   "type": "vocab",
+   "front": "der Sohn",
+   "back": "o filho",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-036",
+   "type": "vocab",
+   "front": "die Tochter",
+   "back": "a filha",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-037",
+   "type": "vocab",
+   "front": "der Bruder",
+   "back": "o irmão",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-038",
+   "type": "vocab",
+   "front": "die Schwester",
+   "back": "a irmã",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-039",
+   "type": "vocab",
+   "front": "der Großvater",
+   "back": "o avô",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-040",
+   "type": "vocab",
+   "front": "die Großmutter",
+   "back": "a avó",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-041",
+   "type": "vocab",
+   "front": "der Onkel",
+   "back": "o tio",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-042",
+   "type": "vocab",
+   "front": "die Tante",
+   "back": "a tia",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-043",
+   "type": "vocab",
+   "front": "der Ehemann",
+   "back": "o marido",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-044",
+   "type": "vocab",
+   "front": "die Ehefrau",
+   "back": "a esposa",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-045",
+   "type": "vocab",
+   "front": "der Freund (Kumpel)",
+   "back": "o amigo",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-046",
+   "type": "vocab",
+   "front": "die Freundin (Partnerin)",
+   "back": "a namorada",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-047",
+   "type": "vocab",
+   "front": "der Nachbar",
+   "back": "o vizinho",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-048",
+   "type": "vocab",
+   "front": "das Kind",
+   "back": "a criança",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-049",
+   "type": "vocab",
+   "front": "der Mann",
+   "back": "o homem",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-050",
+   "type": "vocab",
+   "front": "die Frau",
+   "back": "a mulher",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-051",
+   "type": "vocab",
+   "front": "der Junge",
+   "back": "o menino",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-052",
+   "type": "vocab",
+   "front": "das Mädchen",
+   "back": "a menina",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-053",
+   "type": "vocab",
+   "front": "die Leute",
+   "back": "as pessoas",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-054",
+   "type": "vocab",
+   "front": "der Chef",
+   "back": "o chefe",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-055",
+   "type": "vocab",
+   "front": "der Kollege",
+   "back": "o colega",
+   "tags": [
+    "familie"
+   ]
+  },
+  {
+   "id": "t300-056",
+   "type": "vocab",
+   "front": "der Kopf",
+   "back": "a cabeça",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-057",
+   "type": "vocab",
+   "front": "das Auge",
+   "back": "o olho",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-058",
+   "type": "vocab",
+   "front": "das Ohr",
+   "back": "a orelha",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-059",
+   "type": "vocab",
+   "front": "die Nase",
+   "back": "o nariz",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-060",
+   "type": "vocab",
+   "front": "der Mund",
+   "back": "a boca",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-061",
+   "type": "vocab",
+   "front": "der Zahn",
+   "back": "o dente",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-062",
+   "type": "vocab",
+   "front": "der Hals",
+   "back": "o pescoço",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-063",
+   "type": "vocab",
+   "front": "der Arm",
+   "back": "o braço",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-064",
+   "type": "vocab",
+   "front": "die Hand",
+   "back": "a mão",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-065",
+   "type": "vocab",
+   "front": "der Finger",
+   "back": "o dedo",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-066",
+   "type": "vocab",
+   "front": "das Bein",
+   "back": "a perna",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-067",
+   "type": "vocab",
+   "front": "der Fuß",
+   "back": "o pé",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-068",
+   "type": "vocab",
+   "front": "der Rücken",
+   "back": "as costas",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-069",
+   "type": "vocab",
+   "front": "der Bauch",
+   "back": "a barriga",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-070",
+   "type": "vocab",
+   "front": "das Herz",
+   "back": "o coração",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-071",
+   "type": "vocab",
+   "front": "krank",
+   "back": "doente",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-072",
+   "type": "vocab",
+   "front": "gesund",
+   "back": "saudável",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-073",
+   "type": "vocab",
+   "front": "die Erkältung",
+   "back": "o resfriado",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-074",
+   "type": "vocab",
+   "front": "das Fieber",
+   "back": "a febre",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-075",
+   "type": "vocab",
+   "front": "der Schmerz",
+   "back": "a dor",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-076",
+   "type": "vocab",
+   "front": "der Arzt",
+   "back": "o médico",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-077",
+   "type": "vocab",
+   "front": "das Krankenhaus",
+   "back": "o hospital",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-078",
+   "type": "vocab",
+   "front": "die Apotheke",
+   "back": "a farmácia",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-079",
+   "type": "vocab",
+   "front": "das Medikament",
+   "back": "o remédio",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-080",
+   "type": "vocab",
+   "front": "müde",
+   "back": "cansado",
+   "tags": [
+    "koerper"
+   ]
+  },
+  {
+   "id": "t300-081",
+   "type": "vocab",
+   "front": "das Brot",
+   "back": "o pão",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-082",
+   "type": "vocab",
+   "front": "die Butter",
+   "back": "a manteiga",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-083",
+   "type": "vocab",
+   "front": "der Käse",
+   "back": "o queijo",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-084",
+   "type": "vocab",
+   "front": "das Ei",
+   "back": "o ovo",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-085",
+   "type": "vocab",
+   "front": "die Milch",
+   "back": "o leite",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-086",
+   "type": "vocab",
+   "front": "der Kaffee",
+   "back": "o café",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-087",
+   "type": "vocab",
+   "front": "der Tee",
+   "back": "o chá",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-088",
+   "type": "vocab",
+   "front": "das Wasser",
+   "back": "a água",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-089",
+   "type": "vocab",
+   "front": "der Saft",
+   "back": "o suco",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-090",
+   "type": "vocab",
+   "front": "das Bier",
+   "back": "a cerveja",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-091",
+   "type": "vocab",
+   "front": "der Wein",
+   "back": "o vinho",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-092",
+   "type": "vocab",
+   "front": "der Zucker",
+   "back": "o açúcar",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-093",
+   "type": "vocab",
+   "front": "das Salz",
+   "back": "o sal",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-094",
+   "type": "vocab",
+   "front": "der Reis",
+   "back": "o arroz",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-095",
+   "type": "vocab",
+   "front": "die Bohnen",
+   "back": "o feijão",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-096",
+   "type": "vocab",
+   "front": "das Fleisch",
+   "back": "a carne",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-097",
+   "type": "vocab",
+   "front": "das Hähnchen",
+   "back": "o frango",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-098",
+   "type": "vocab",
+   "front": "der Fisch",
+   "back": "o peixe",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-099",
+   "type": "vocab",
+   "front": "das Gemüse",
+   "back": "os legumes",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-100",
+   "type": "vocab",
+   "front": "das Obst",
+   "back": "as frutas",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-101",
+   "type": "vocab",
+   "front": "der Apfel",
+   "back": "a maçã",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-102",
+   "type": "vocab",
+   "front": "die Banane",
+   "back": "a banana",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-103",
+   "type": "vocab",
+   "front": "die Orange",
+   "back": "a laranja",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-104",
+   "type": "vocab",
+   "front": "die Tomate",
+   "back": "o tomate",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-105",
+   "type": "vocab",
+   "front": "die Kartoffel",
+   "back": "a batata",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-106",
+   "type": "vocab",
+   "front": "die Zwiebel",
+   "back": "a cebola",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-107",
+   "type": "vocab",
+   "front": "der Knoblauch",
+   "back": "o alho",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-108",
+   "type": "vocab",
+   "front": "das Mittagessen",
+   "back": "o almoço",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-109",
+   "type": "vocab",
+   "front": "das Abendessen",
+   "back": "o jantar",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-110",
+   "type": "vocab",
+   "front": "der Nachtisch",
+   "back": "a sobremesa",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-111",
+   "type": "vocab",
+   "front": "das Restaurant",
+   "back": "o restaurante",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-112",
+   "type": "vocab",
+   "front": "die Speisekarte",
+   "back": "o cardápio",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-113",
+   "type": "vocab",
+   "front": "der Kellner",
+   "back": "o garçom",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-114",
+   "type": "vocab",
+   "front": "das Trinkgeld",
+   "back": "a gorjeta",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-115",
+   "type": "vocab",
+   "front": "lecker",
+   "back": "gostoso",
+   "tags": [
+    "essen"
+   ]
+  },
+  {
+   "id": "t300-116",
+   "type": "vocab",
+   "front": "das Haus",
+   "back": "a casa",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-117",
+   "type": "vocab",
+   "front": "die Wohnung",
+   "back": "o apartamento",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-118",
+   "type": "vocab",
+   "front": "das Zimmer",
+   "back": "o quarto",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-119",
+   "type": "vocab",
+   "front": "die Küche",
+   "back": "a cozinha",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-120",
+   "type": "vocab",
+   "front": "das Badezimmer",
+   "back": "o banheiro",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-121",
+   "type": "vocab",
+   "front": "das Wohnzimmer",
+   "back": "a sala",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-122",
+   "type": "vocab",
+   "front": "die Tür",
+   "back": "a porta",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-123",
+   "type": "vocab",
+   "front": "das Fenster",
+   "back": "a janela",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-124",
+   "type": "vocab",
+   "front": "der Tisch",
+   "back": "a mesa",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-125",
+   "type": "vocab",
+   "front": "der Stuhl",
+   "back": "a cadeira",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-126",
+   "type": "vocab",
+   "front": "das Bett",
+   "back": "a cama",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-127",
+   "type": "vocab",
+   "front": "der Schrank",
+   "back": "o armário",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-128",
+   "type": "vocab",
+   "front": "der Kühlschrank",
+   "back": "a geladeira",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-129",
+   "type": "vocab",
+   "front": "der Herd",
+   "back": "o fogão",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-130",
+   "type": "vocab",
+   "front": "die Dusche",
+   "back": "o chuveiro",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-131",
+   "type": "vocab",
+   "front": "der Schlüssel",
+   "back": "a chave",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-132",
+   "type": "vocab",
+   "front": "die Lampe",
+   "back": "a luminária",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-133",
+   "type": "vocab",
+   "front": "der Fernseher",
+   "back": "a televisão",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-134",
+   "type": "vocab",
+   "front": "das Handy",
+   "back": "o celular",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-135",
+   "type": "vocab",
+   "front": "der Computer",
+   "back": "o computador",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-136",
+   "type": "vocab",
+   "front": "die Miete",
+   "back": "o aluguel",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-137",
+   "type": "vocab",
+   "front": "der Garten",
+   "back": "o jardim",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-138",
+   "type": "vocab",
+   "front": "die Treppe",
+   "back": "a escada",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-139",
+   "type": "vocab",
+   "front": "der Aufzug",
+   "back": "o elevador",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-140",
+   "type": "vocab",
+   "front": "die Nachbarschaft",
+   "back": "a vizinhança",
+   "tags": [
+    "haus"
+   ]
+  },
+  {
+   "id": "t300-141",
+   "type": "vocab",
+   "front": "die Stadt",
+   "back": "a cidade",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-142",
+   "type": "vocab",
+   "front": "die Straße",
+   "back": "a rua",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-143",
+   "type": "vocab",
+   "front": "der Platz",
+   "back": "a praça",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-144",
+   "type": "vocab",
+   "front": "der Bahnhof",
+   "back": "a estação",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-145",
+   "type": "vocab",
+   "front": "der Bus",
+   "back": "o ônibus",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-146",
+   "type": "vocab",
+   "front": "der Zug",
+   "back": "o trem",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-147",
+   "type": "vocab",
+   "front": "die U-Bahn",
+   "back": "o metrô",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-148",
+   "type": "vocab",
+   "front": "das Taxi",
+   "back": "o táxi",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-149",
+   "type": "vocab",
+   "front": "das Flugzeug",
+   "back": "o avião",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-150",
+   "type": "vocab",
+   "front": "der Flughafen",
+   "back": "o aeroporto",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-151",
+   "type": "vocab",
+   "front": "das Fahrrad",
+   "back": "a bicicleta",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-152",
+   "type": "vocab",
+   "front": "das Auto",
+   "back": "o carro",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-153",
+   "type": "vocab",
+   "front": "der Parkplatz",
+   "back": "o estacionamento",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-154",
+   "type": "vocab",
+   "front": "die Ampel",
+   "back": "o semáforo",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-155",
+   "type": "vocab",
+   "front": "die Ecke",
+   "back": "a esquina",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-156",
+   "type": "vocab",
+   "front": "die Brücke",
+   "back": "a ponte",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-157",
+   "type": "vocab",
+   "front": "der Strand",
+   "back": "a praia",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-158",
+   "type": "vocab",
+   "front": "das Meer",
+   "back": "o mar",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-159",
+   "type": "vocab",
+   "front": "der Markt",
+   "back": "o mercado",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-160",
+   "type": "vocab",
+   "front": "der Supermarkt",
+   "back": "o supermercado",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-161",
+   "type": "vocab",
+   "front": "die Bäckerei",
+   "back": "a padaria",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-162",
+   "type": "vocab",
+   "front": "die Bank",
+   "back": "o banco",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-163",
+   "type": "vocab",
+   "front": "die Post",
+   "back": "os correios",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-164",
+   "type": "vocab",
+   "front": "die Kirche",
+   "back": "a igreja",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-165",
+   "type": "vocab",
+   "front": "das Museum",
+   "back": "o museu",
+   "tags": [
+    "stadt"
+   ]
+  },
+  {
+   "id": "t300-166",
+   "type": "vocab",
+   "front": "die Arbeit",
+   "back": "o trabalho",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-167",
+   "type": "vocab",
+   "front": "das Büro",
+   "back": "o escritório",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-168",
+   "type": "vocab",
+   "front": "die Schule",
+   "back": "a escola",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-169",
+   "type": "vocab",
+   "front": "die Universität",
+   "back": "a universidade",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-170",
+   "type": "vocab",
+   "front": "der Lehrer",
+   "back": "o professor",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-171",
+   "type": "vocab",
+   "front": "der Schüler",
+   "back": "o aluno",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-172",
+   "type": "vocab",
+   "front": "die Prüfung",
+   "back": "a prova",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-173",
+   "type": "vocab",
+   "front": "die Hausaufgabe",
+   "back": "a tarefa de casa",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-174",
+   "type": "vocab",
+   "front": "das Buch",
+   "back": "o livro",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-175",
+   "type": "vocab",
+   "front": "das Heft",
+   "back": "o caderno",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-176",
+   "type": "vocab",
+   "front": "der Stift",
+   "back": "a caneta",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-177",
+   "type": "vocab",
+   "front": "die Besprechung",
+   "back": "a reunião",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-178",
+   "type": "vocab",
+   "front": "der Urlaub",
+   "back": "as férias",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-179",
+   "type": "vocab",
+   "front": "das Gehalt",
+   "back": "o salário",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-180",
+   "type": "vocab",
+   "front": "der Termin",
+   "back": "o compromisso",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-181",
+   "type": "vocab",
+   "front": "die Frage",
+   "back": "a pergunta",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-182",
+   "type": "vocab",
+   "front": "die Antwort",
+   "back": "a resposta",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-183",
+   "type": "vocab",
+   "front": "das Wort",
+   "back": "a palavra",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-184",
+   "type": "vocab",
+   "front": "der Satz",
+   "back": "a frase",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-185",
+   "type": "vocab",
+   "front": "die Sprache",
+   "back": "a língua",
+   "tags": [
+    "arbeit"
+   ]
+  },
+  {
+   "id": "t300-186",
+   "type": "vocab",
+   "front": "das Wetter",
+   "back": "o tempo",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-187",
+   "type": "vocab",
+   "front": "die Sonne",
+   "back": "o sol",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-188",
+   "type": "vocab",
+   "front": "der Regen",
+   "back": "a chuva",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-189",
+   "type": "vocab",
+   "front": "der Wind",
+   "back": "o vento",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-190",
+   "type": "vocab",
+   "front": "die Wolke",
+   "back": "a nuvem",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-191",
+   "type": "vocab",
+   "front": "die Hitze",
+   "back": "o calor",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-192",
+   "type": "vocab",
+   "front": "die Kälte",
+   "back": "o frio",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-193",
+   "type": "vocab",
+   "front": "der Sommer",
+   "back": "o verão",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-194",
+   "type": "vocab",
+   "front": "der Winter",
+   "back": "o inverno",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-195",
+   "type": "vocab",
+   "front": "der Frühling",
+   "back": "a primavera",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-196",
+   "type": "vocab",
+   "front": "der Herbst",
+   "back": "o outono",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-197",
+   "type": "vocab",
+   "front": "der Baum",
+   "back": "a árvore",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-198",
+   "type": "vocab",
+   "front": "die Blume",
+   "back": "a flor",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-199",
+   "type": "vocab",
+   "front": "der Fluss",
+   "back": "o rio",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-200",
+   "type": "vocab",
+   "front": "der Berg",
+   "back": "a montanha",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-201",
+   "type": "vocab",
+   "front": "der Wald",
+   "back": "a floresta",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-202",
+   "type": "vocab",
+   "front": "der Hund",
+   "back": "o cachorro",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-203",
+   "type": "vocab",
+   "front": "die Katze",
+   "back": "o gato",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-204",
+   "type": "vocab",
+   "front": "der Vogel",
+   "back": "o pássaro",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-205",
+   "type": "vocab",
+   "front": "das Pferd",
+   "back": "o cavalo",
+   "tags": [
+    "natur"
+   ]
+  },
+  {
+   "id": "t300-206",
+   "type": "vocab",
+   "front": "die Kleidung",
+   "back": "a roupa",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-207",
+   "type": "vocab",
+   "front": "das Hemd",
+   "back": "a camisa",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-208",
+   "type": "vocab",
+   "front": "das T-Shirt",
+   "back": "a camiseta",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-209",
+   "type": "vocab",
+   "front": "die Hose",
+   "back": "a calça",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-210",
+   "type": "vocab",
+   "front": "das Kleid",
+   "back": "o vestido",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-211",
+   "type": "vocab",
+   "front": "der Rock",
+   "back": "a saia",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-212",
+   "type": "vocab",
+   "front": "die Jacke",
+   "back": "a jaqueta",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-213",
+   "type": "vocab",
+   "front": "der Schuh",
+   "back": "o sapato",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-214",
+   "type": "vocab",
+   "front": "die Socke",
+   "back": "a meia",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-215",
+   "type": "vocab",
+   "front": "der Hut",
+   "back": "o chapéu",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-216",
+   "type": "vocab",
+   "front": "die Brille",
+   "back": "os óculos",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-217",
+   "type": "vocab",
+   "front": "die Tasche",
+   "back": "a bolsa",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-218",
+   "type": "vocab",
+   "front": "rot",
+   "back": "vermelho",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-219",
+   "type": "vocab",
+   "front": "blau",
+   "back": "azul",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-220",
+   "type": "vocab",
+   "front": "grün",
+   "back": "verde",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-221",
+   "type": "vocab",
+   "front": "gelb",
+   "back": "amarelo",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-222",
+   "type": "vocab",
+   "front": "schwarz",
+   "back": "preto",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-223",
+   "type": "vocab",
+   "front": "weiß",
+   "back": "branco",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-224",
+   "type": "vocab",
+   "front": "grau",
+   "back": "cinza",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-225",
+   "type": "vocab",
+   "front": "braun",
+   "back": "marrom",
+   "tags": [
+    "kleidung"
+   ]
+  },
+  {
+   "id": "t300-226",
+   "type": "vocab",
+   "front": "sein (dauerhaft)",
+   "back": "ser",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-227",
+   "type": "vocab",
+   "front": "sein (vorübergehend)",
+   "back": "estar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-228",
+   "type": "vocab",
+   "front": "haben",
+   "back": "ter",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-229",
+   "type": "vocab",
+   "front": "machen",
+   "back": "fazer",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-230",
+   "type": "vocab",
+   "front": "gehen",
+   "back": "ir",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-231",
+   "type": "vocab",
+   "front": "kommen",
+   "back": "vir",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-232",
+   "type": "vocab",
+   "front": "sehen",
+   "back": "ver",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-233",
+   "type": "vocab",
+   "front": "sagen",
+   "back": "dizer",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-234",
+   "type": "vocab",
+   "front": "sprechen",
+   "back": "falar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-235",
+   "type": "vocab",
+   "front": "essen",
+   "back": "comer",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-236",
+   "type": "vocab",
+   "front": "trinken",
+   "back": "beber",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-237",
+   "type": "vocab",
+   "front": "schlafen",
+   "back": "dormir",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-238",
+   "type": "vocab",
+   "front": "aufwachen",
+   "back": "acordar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-239",
+   "type": "vocab",
+   "front": "aufstehen",
+   "back": "levantar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-240",
+   "type": "vocab",
+   "front": "arbeiten",
+   "back": "trabalhar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-241",
+   "type": "vocab",
+   "front": "lernen",
+   "back": "estudar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-242",
+   "type": "vocab",
+   "front": "lesen",
+   "back": "ler",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-243",
+   "type": "vocab",
+   "front": "schreiben",
+   "back": "escrever",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-244",
+   "type": "vocab",
+   "front": "hören",
+   "back": "ouvir",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-245",
+   "type": "vocab",
+   "front": "verstehen",
+   "back": "entender",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-246",
+   "type": "vocab",
+   "front": "wissen",
+   "back": "saber",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-247",
+   "type": "vocab",
+   "front": "kennen",
+   "back": "conhecer",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-248",
+   "type": "vocab",
+   "front": "kaufen",
+   "back": "comprar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-249",
+   "type": "vocab",
+   "front": "bezahlen",
+   "back": "pagar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-250",
+   "type": "vocab",
+   "front": "kosten",
+   "back": "custar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-251",
+   "type": "vocab",
+   "front": "suchen",
+   "back": "procurar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-252",
+   "type": "vocab",
+   "front": "finden",
+   "back": "encontrar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-253",
+   "type": "vocab",
+   "front": "öffnen",
+   "back": "abrir",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-254",
+   "type": "vocab",
+   "front": "schließen",
+   "back": "fechar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-255",
+   "type": "vocab",
+   "front": "warten",
+   "back": "esperar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-256",
+   "type": "vocab",
+   "front": "ankommen",
+   "back": "chegar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-257",
+   "type": "vocab",
+   "front": "weggehen",
+   "back": "sair",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-258",
+   "type": "vocab",
+   "front": "reisen",
+   "back": "viajar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-259",
+   "type": "vocab",
+   "front": "fahren",
+   "back": "dirigir",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-260",
+   "type": "vocab",
+   "front": "laufen (rennen)",
+   "back": "correr",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-261",
+   "type": "vocab",
+   "front": "spazieren gehen",
+   "back": "passear",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-262",
+   "type": "vocab",
+   "front": "helfen",
+   "back": "ajudar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-263",
+   "type": "vocab",
+   "front": "brauchen",
+   "back": "precisar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-264",
+   "type": "vocab",
+   "front": "mögen",
+   "back": "gostar",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-265",
+   "type": "vocab",
+   "front": "wollen",
+   "back": "querer",
+   "tags": [
+    "verben"
+   ]
+  },
+  {
+   "id": "t300-266",
+   "type": "vocab",
+   "front": "groß",
+   "back": "grande",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-267",
+   "type": "vocab",
+   "front": "klein",
+   "back": "pequeno",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-268",
+   "type": "vocab",
+   "front": "gut",
+   "back": "bom",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-269",
+   "type": "vocab",
+   "front": "schlecht",
+   "back": "ruim",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-270",
+   "type": "vocab",
+   "front": "neu",
+   "back": "novo",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-271",
+   "type": "vocab",
+   "front": "alt",
+   "back": "velho",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-272",
+   "type": "vocab",
+   "front": "schön (hübsch)",
+   "back": "bonito",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-273",
+   "type": "vocab",
+   "front": "hässlich",
+   "back": "feio",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-274",
+   "type": "vocab",
+   "front": "schnell",
+   "back": "rápido",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-275",
+   "type": "vocab",
+   "front": "langsam",
+   "back": "devagar",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-276",
+   "type": "vocab",
+   "front": "heiß",
+   "back": "quente",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-277",
+   "type": "vocab",
+   "front": "kalt",
+   "back": "frio",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-278",
+   "type": "vocab",
+   "front": "leicht (einfach)",
+   "back": "fácil",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-279",
+   "type": "vocab",
+   "front": "schwierig",
+   "back": "difícil",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-280",
+   "type": "vocab",
+   "front": "voll",
+   "back": "cheio",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-281",
+   "type": "vocab",
+   "front": "leer",
+   "back": "vazio",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-282",
+   "type": "vocab",
+   "front": "sauber",
+   "back": "limpo",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-283",
+   "type": "vocab",
+   "front": "schmutzig",
+   "back": "sujo",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-284",
+   "type": "vocab",
+   "front": "glücklich",
+   "back": "feliz",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-285",
+   "type": "vocab",
+   "front": "traurig",
+   "back": "triste",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-286",
+   "type": "vocab",
+   "front": "stark",
+   "back": "forte",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-287",
+   "type": "vocab",
+   "front": "schwach",
+   "back": "fraco",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-288",
+   "type": "vocab",
+   "front": "richtig",
+   "back": "certo",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-289",
+   "type": "vocab",
+   "front": "falsch",
+   "back": "errado",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-290",
+   "type": "vocab",
+   "front": "wichtig",
+   "back": "importante",
+   "tags": [
+    "adjektive"
+   ]
+  },
+  {
+   "id": "t300-291",
+   "type": "vocab",
+   "front": "bitte",
+   "back": "por favor",
+   "tags": [
+    "ausdruecke"
+   ]
+  },
+  {
+   "id": "t300-292",
+   "type": "vocab",
+   "front": "danke",
+   "back": "obrigado",
+   "tags": [
+    "ausdruecke"
+   ]
+  },
+  {
+   "id": "t300-293",
+   "type": "vocab",
+   "front": "Entschuldigung",
+   "back": "desculpa",
+   "tags": [
+    "ausdruecke"
+   ]
+  },
+  {
+   "id": "t300-294",
+   "type": "vocab",
+   "front": "vielleicht",
+   "back": "talvez",
+   "tags": [
+    "ausdruecke"
+   ]
+  },
+  {
+   "id": "t300-295",
+   "type": "vocab",
+   "front": "natürlich",
+   "back": "claro",
+   "tags": [
+    "ausdruecke"
+   ]
+  },
+  {
+   "id": "t300-296",
+   "type": "vocab",
+   "front": "cool, prima",
+   "back": "legal",
+   "tags": [
+    "ausdruecke"
+   ]
+  },
+  {
+   "id": "t300-297",
+   "type": "vocab",
+   "front": "Prost!",
+   "back": "Saúde!",
+   "tags": [
+    "ausdruecke"
+   ]
+  },
+  {
+   "id": "t300-298",
+   "type": "vocab",
+   "front": "Bis später!",
+   "back": "Até mais!",
+   "tags": [
+    "ausdruecke"
+   ]
+  },
+  {
+   "id": "t300-299",
+   "type": "vocab",
+   "front": "Wie geht's?",
+   "back": "Tudo bem?",
+   "tags": [
+    "ausdruecke"
+   ]
+  },
+  {
+   "id": "t300-300",
+   "type": "vocab",
+   "front": "Ich weiß nicht.",
+   "back": "Não sei.",
+   "tags": [
+    "ausdruecke"
+   ]
+  }
+ ]
+}

@@ -35,10 +35,16 @@
         <button type="button" id="btn-ueben" class="btn wide" hidden>Trotzdem üben</button>
       </div>
       <ul class="rows">
+        <li><span class="label">Fällige Wiederholungen</span><span class="value" id="heute-reviews">–</span></li>
+        <li><span class="label">Neue Karten</span><span class="value" id="heute-new">–</span></li>
         <li><span class="label">Heute gelernt</span><span class="value" id="heute-done">–</span></li>
         <li><span class="label">Nächste Fälligkeit</span><span class="value" id="heute-next">–</span></li>
       </ul>
-      <p class="muted small" id="heute-empty" hidden>Noch keine Karten. Lege unter „Karte" eine an oder importiere eine Sicherung.</p>
+      <p class="muted small" id="heute-empty" hidden>Noch keine Karten. Lege unter „Karte" eine an oder importiere unter „Decks" einen Stapel.</p>
+      <div class="quiet-row" id="heute-backup" hidden>
+        <span class="muted small" id="heute-backup-text"></span>
+        <button type="button" id="btn-heute-backup" class="btn small">Jetzt sichern</button>
+      </div>
     </section>
 
     <!-- 2. Session -->
@@ -86,9 +92,59 @@
 
     <!-- 3. Decks -->
     <section id="screen-decks" class="screen" data-screen="decks" hidden>
-      <header class="top"><h1>Decks</h1><button type="button" id="btn-deck-neu" class="btn small">+ Neues Deck</button></header>
+      <header class="top">
+        <h1>Decks</h1>
+        <div class="top-actions">
+          <a href="#importieren" id="btn-importieren" class="btn small">Importieren</a>
+          <button type="button" id="btn-deck-neu" class="btn small">+ Neues Deck</button>
+        </div>
+      </header>
       <div id="deck-list" class="deck-list"></div>
       <p class="muted small" id="decks-empty" hidden>Noch kein Deck. Tippe auf „Neues Deck".</p>
+    </section>
+
+    <!-- 3b. Importieren (von Decks aus erreichbar) -->
+    <section id="screen-importieren" class="screen" data-screen="importieren" hidden>
+      <header class="top"><h1>Importieren</h1><a href="#decks" class="btn small">Zu den Decks</a></header>
+      <p class="muted small">Eine JSON- oder CSV-Datei im Deckformat (beschrieben in <code>docs/deck-format.md</code>). Die Datei wird zuerst gelesen und gezeigt – geschrieben wird erst, wenn du unten bestätigst.</p>
+      <label class="btn primary wide file-btn">Datei wählen<input type="file" id="imp-file" accept=".json,.csv,.tsv,.txt,application/json,text/csv,text/tab-separated-values,text/plain" hidden></label>
+      <p class="error" id="imp-error" hidden></p>
+
+      <div id="imp-ask" class="import-preview" hidden>
+        <p>Das Trennzeichen ist nicht eindeutig. Womit sind die Spalten getrennt?</p>
+        <div class="dialog-actions" id="imp-ask-options"></div>
+      </div>
+
+      <div id="imp-preview" hidden>
+        <h2>Vorschau</h2>
+        <p class="muted small" id="imp-source"></p>
+        <ul class="rows">
+          <li><span class="label">Einträge in der Datei</span><span class="value" id="imp-total">–</span></li>
+          <li><span class="label">Neue Karten</span><span class="value ok" id="imp-new">–</span></li>
+          <li><span class="label">Dubletten (werden übersprungen)</span><span class="value" id="imp-dupes">–</span></li>
+          <li><span class="label">Fehlerhaft (werden übersprungen)</span><span class="value" id="imp-faulty">–</span></li>
+        </ul>
+
+        <h2>Zieldeck</h2>
+        <label class="field">
+          <span>Deck</span>
+          <select id="imp-deck"></select>
+        </label>
+        <label class="field" id="imp-deck-name-field">
+          <span>Name des neuen Decks</span>
+          <input type="text" id="imp-deck-name">
+        </label>
+        <p class="muted small" id="imp-deck-note"></p>
+
+        <h2 id="imp-sample-title">Die ersten zehn Karten</h2>
+        <ul class="card-list plain" id="imp-sample"></ul>
+
+        <h2 id="imp-errors-title" hidden>Fehlerhafte Einträge</h2>
+        <ul class="error-list" id="imp-errors" hidden></ul>
+
+        <button type="button" id="btn-imp-confirm" class="btn primary wide">Importieren</button>
+        <button type="button" id="btn-imp-cancel" class="btn wide">Abbrechen</button>
+      </div>
     </section>
 
     <!-- 4. Karte -->
@@ -131,6 +187,9 @@
           <span>Tags <em>(optional, durch Komma getrennt)</em></span>
           <input type="text" id="f-tags" autocapitalize="off">
         </label>
+        <label class="check" id="f-suspended-field" hidden>
+          <input type="checkbox" id="f-suspended"><span>Karte pausiert – kommt nicht in die Session, behält ihren Zustand</span>
+        </label>
         <p class="error" id="f-error" hidden></p>
         <button type="submit" id="btn-card-save" class="btn primary wide">Speichern</button>
         <button type="button" id="btn-card-cancel" class="btn wide" hidden>Abbrechen</button>
@@ -150,6 +209,11 @@
         <span>Tageslimit für Wiederholungen</span>
         <input type="text" id="s-limit" inputmode="numeric" size="5">
       </label>
+      <label class="field row">
+        <span>Neue Karten pro Tag</span>
+        <input type="text" id="s-new-limit" inputmode="numeric" size="5">
+      </label>
+      <p class="muted small">Neue Karten kommen in Eingabe- bzw. Importreihenfolge, höchstens so viele pro Tag. Ein Import von 300 Karten zeigt am ersten Tag also nur 10.</p>
       <label class="check">
         <input type="checkbox" id="s-typing"><span>Vokabeln DE→PT per Eingabefeld statt Antippen</span>
       </label>
@@ -167,7 +231,7 @@
       <ul class="rows">
         <li><span class="label">Gestartet</span><span class="value" id="st-mode" data-state="unknown">…</span></li>
         <li><span class="label">Offline</span><span class="value pending" id="st-offline" data-state="pending">wird eingerichtet …</span></li>
-        <li><span class="label">Version</span><span class="value" id="st-version">0.1.0</span></li>
+        <li><span class="label">Version</span><span class="value" id="st-version">0.2.0</span></li>
         <li><span class="label">Karten im Bestand</span><span class="value" id="s-card-count">–</span></li>
       </ul>
       <button type="button" id="btn-check-update" class="btn wide">Nach neuer Fassung suchen</button>

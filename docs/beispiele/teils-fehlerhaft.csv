@@ -1,0 +1,7 @@
+front;back;type;tags;example
+der Hund;o cachorro;vocab;tier;O cachorro late.
+die Katze;;vocab;tier;
+das Pferd;o cavalo;tier;;
+Ontem eu fui ao mercado.;;cloze;;
+der Vogel;o pássaro;vocab;tier;O pássaro canta; de manhã.
+die Kuh;a vaca;vocab;tier;

@@ -58,10 +58,18 @@ async function answer(grade) {
   return ivls;
 }
 
-test('Start: Probe-Deck mit 20 Karten, alle fällig', async () => {
+test('Start: Probe-Deck mit 20 Karten, alle fällig – aber nur 10 neue pro Tag', async () => {
   await open();
-  assert.equal(await heuteCount(), 20);
+  assert.equal(await heuteCount(), 10, 'Standard: 10 neue Karten pro Tag');
+  assert.equal(await page.locator('#heute-reviews').textContent(), '0');
+  assert.equal(await page.locator('#heute-new').textContent(), '10 von 20');
+  assert.match(await page.locator('#heute-note').textContent(), /Von 20 neuen Karten kommen heute 10/);
   assert.equal(await page.locator('#heute-done').textContent(), '0 Karten');
+  assert.ok(await page.locator('#heute-backup').isHidden(), 'ohne Lernfortschritt keine Erinnerung an die Sicherung');
+  // Für die Abläufe aus Phase 1 das Limit für neue Karten aufheben (Import-Tests prüfen es getrennt).
+  await page.evaluate(async () => { await window.estudar.db.setSetting('newLimit', 999); window.estudar.settings.newLimit = 999; });
+  assert.equal(await heuteCount(), 20);
+  assert.equal(await page.locator('#heute-new').textContent(), '20');
   await page.click('#tabs a[data-tab="decks"]');
   await page.waitForSelector('.deck');
   assert.match(await page.locator('.deck .name').first().textContent(), /^Probe \(löschbar\)$/);
@@ -359,7 +367,7 @@ test('4. Export als Datei, Deck löschen, Import ersetzt den Bestand – Protoko
   assert.equal(shared.type, 'application/json');
   const backup = JSON.parse(shared.text);
   assert.equal(backup.schema, 'estudar-backup/1');
-  assert.equal(backup.appVersion, '0.1.0');
+  assert.equal(backup.appVersion, '0.2.0');
   assert.equal(backup.cards.length, cardsBefore);
   assert.equal(backup.cardStates.length, cardsBefore);
   assert.equal(backup.reviews.length, reviewsBefore);
@@ -457,8 +465,8 @@ test('Update: Hinweis statt Neuladen, nie während einer Session, Wechsel erst n
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 15000 });
   await page.evaluate(() => { window.__marker = 'nicht neu geladen'; });
   const sw = readText('sw.js');
-  assert.match(sw, /var VERSION = '0\.1\.0'/);
-  server.override('sw.js', sw.replace("var VERSION = '0.1.0'", "var VERSION = '0.1.0-test'"));
+  assert.match(sw, /var VERSION = '0\.2\.0'/);
+  server.override('sw.js', sw.replace("var VERSION = '0.2.0'", "var VERSION = '0.2.0-test'"));
 
   // Während einer Session: kein Hinweis
   await page.click('#btn-ueben');
@@ -475,13 +483,13 @@ test('Update: Hinweis statt Neuladen, nie während einer Session, Wechsel erst n
   await page.waitForSelector('#update-hint:not([hidden])');
   assert.equal(await page.evaluate(() => window.__marker), 'nicht neu geladen');
   const before = await page.evaluate(async () => (await caches.keys()).filter((k) => k.startsWith('estudar-v')).sort());
-  assert.deepEqual(before, ['estudar-v0.1.0', 'estudar-v0.1.0-test'], 'neue Fassung liegt vorgeladen bereit, alte läuft weiter');
+  assert.deepEqual(before, ['estudar-v0.2.0', 'estudar-v0.2.0-test'], 'neue Fassung liegt vorgeladen bereit, alte läuft weiter');
 
   // Antippen → neue Fassung übernimmt, Seite lädt einmal neu
   await Promise.all([page.waitForNavigation(), page.click('#btn-update')]);
   await waitForApp();
   assert.equal(await page.evaluate(() => window.__marker), undefined, 'Seite wurde neu geladen');
-  await page.waitForFunction(async () => (await caches.keys()).filter((k) => k.startsWith('estudar-v')).join() === 'estudar-v0.1.0-test', null, { timeout: 15000 });
+  await page.waitForFunction(async () => (await caches.keys()).filter((k) => k.startsWith('estudar-v')).join() === 'estudar-v0.2.0-test', null, { timeout: 15000 });
   assert.equal(await count('cards'), cardsTotal, 'Daten überleben das Update');
   server.override('sw.js', null);
 });

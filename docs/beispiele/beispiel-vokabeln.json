@@ -1,0 +1,25 @@
+{
+  "schema": "flashdeck/1",
+  "deck": {
+    "name": "Beispiel · Módulo 2 · Dia 03",
+    "front_lang": "de-DE",
+    "back_lang": "pt-BR",
+    "tags": ["modulo2", "dia03", "beispiel"]
+  },
+  "cards": [
+    { "id": "m2d03-001", "type": "vocab", "front": "der Schlaf", "back": "o sono", "example": "O sono também é treino.", "tags": ["substantiv"] },
+    { "id": "m2d03-002", "type": "vocab", "front": "die Reise", "back": "a viagem", "example": "A viagem foi longa, mas valeu a pena.", "tags": ["substantiv"] },
+    { "id": "m2d03-003", "type": "vocab", "front": "das Frühstück", "back": "o café da manhã", "example": "Tomei café da manhã bem cedo.", "tags": ["substantiv", "essen"] },
+    { "id": "m2d03-004", "type": "vocab", "front": "vergessen", "back": "esquecer", "example": "Esqueci a chave em casa.", "tags": ["verb"], "direction": "both" },
+    { "id": "m2d03-005", "type": "vocab", "front": "anfangen", "back": "começar", "example": "Começamos a aula às oito.", "tags": ["verb"], "direction": "both" },
+    { "id": "m2d03-006", "type": "vocab", "front": "beschäftigt", "back": "ocupado", "example": "Hoje estou muito ocupado.", "tags": ["adjektiv"], "hint": "Adjektiv, m." },
+    { "id": "m2d03-007", "type": "vocab", "front": "gestern Abend", "back": "ontem à noite", "example": "Ontem à noite jantei fora.", "tags": ["zeit"] },
+    { "id": "m2d03-008", "type": "cloze", "text": "Ontem eu {{c1::fui}} para o trabalho de ônibus.", "note": "ir · pretérito perfeito · eu", "tags": ["preterito-perfeito"] },
+    { "id": "m2d03-009", "type": "cloze", "text": "Nós {{c1::comemos}} feijoada no domingo e {{c2::dormimos}} a tarde toda.", "note": "comer, dormir · pretérito perfeito · nós", "tags": ["preterito-perfeito"] },
+    { "id": "m2d03-010", "type": "cloze", "text": "Ela {{c1::fez::fazer}} um bolo para a festa.", "note": "Der Hinweis hinter :: erscheint in der Lücke.", "tags": ["preterito-perfeito"] },
+    { "id": "m2d03-011", "type": "conjugation", "prompt": "falar · pretérito perfeito · nós", "answer": "falamos", "tags": ["verb", "preterito-perfeito"] },
+    { "id": "m2d03-012", "type": "conjugation", "prompt": "ter · pretérito perfeito · eu", "answer": "tive", "hint": "unregelmäßig", "tags": ["verb", "preterito-perfeito"] },
+    { "id": "m2d03-013", "type": "sentence", "front": "Ich habe gestern keine Zeit zum Lernen gehabt.", "back": "Ontem eu não tive tempo para estudar.", "tags": ["satz"] },
+    { "id": "m2d03-014", "type": "sentence", "front": "Wir sind gestern zu spät angekommen.", "back": "A gente chegou atrasado ontem.", "example": "„a gente“ wird wie „ele/ela“ konjugiert.", "tags": ["satz"] }
+  ]
+}

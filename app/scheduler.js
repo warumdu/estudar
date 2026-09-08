@@ -152,33 +152,59 @@ export function nextDueText(due, now = new Date()) {
   return `am ${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}`;
 }
 
+/* ---- Decks ---- */
+
+/** Ein Deck ohne das Feld `active` (Phase 1) gilt als aktiv. */
+export function isDeckActive(deck) {
+  return !deck || deck.active !== false;
+}
+
+/** Kennungen der inaktiven Decks – deren Karten kommen nie in eine Session. */
+export function inactiveDeckIds(decks = []) {
+  return new Set(decks.filter((d) => !isDeckActive(d)).map((d) => d.id));
+}
+
+/** Lernbar = vorhanden, nicht pausiert, Deck aktiv. */
+function learnable(card, inactive) {
+  return !!card && !card.suspended && !inactive.has(card.deckId);
+}
+
 /* ---- Tagesliste ---- */
 
 /**
  * Baut die Reihenfolge für heute.
  *
- * - Nur Karten, die es gibt und die nicht pausiert sind.
+ * - Nur Karten, die es gibt, die nicht pausiert sind und deren Deck aktiv ist.
  * - Zuerst Lernkarten (Learning/Relearning), dann Wiederholungen (Review) nach
- *   Fälligkeit – die am längsten überfälligen zuerst –, dann neue Karten.
+ *   Fälligkeit – die am längsten überfälligen zuerst –, dann neue Karten in
+ *   Eingabe- bzw. Importreihenfolge (createdAt), nie zufällig.
  * - Das Tageslimit gilt für Wiederholungen: Was heute schon als Wiederholung
  *   bewertet wurde, zehrt vom Limit; der Rest bleibt fällig und kommt an den
  *   Folgetagen als Erstes dran.
+ * - Das zweite Limit „neue Karten pro Tag" gilt für neue Karten: Was heute
+ *   schon als neue Karte bewertet wurde, zehrt davon. Ein Import von 300 Karten
+ *   zeigt am ersten Tag nur newLimit davon.
  * - Geschwisterkarten (gleiche noteId) kommen nie am selben Tag: Wurde heute
  *   schon eine Karte der Note bewertet oder steht sie weiter vorn in der Liste,
  *   wird die andere zurückgestellt.
  *
- * @returns {{ queue: object[], dueTotal: number, backlog: number, deferredSiblings: number }}
+ * @returns {{ queue: object[], dueTotal: number, backlog: number, newBacklog: number, deferredSiblings: number,
+ *             reviewedToday: number, reviewsDue: number, reviewsInQueue: number, newDue: number, newInQueue: number }}
  */
-export function buildQueue({ cards, states, reviewsToday = [], settings = {}, now = new Date() }) {
+export function buildQueue({ cards, states, reviewsToday = [], settings = {}, decks = [], now = new Date() }) {
   const limit = Math.max(0, Number(settings.dailyLimit ?? 40) | 0);
+  const newLimit = Math.max(0, Number(settings.newLimit ?? 10) | 0);
   const cardById = new Map(cards.map((c) => [c.id, c]));
+  const inactive = inactiveDeckIds(decks);
 
   const reviewedToday = new Set();
   const reviewsCountedToday = new Set();
+  const newCountedToday = new Set();
   const seenNotes = new Map(); // noteId → Karte, die die Note heute belegt
   for (const r of reviewsToday) {
     reviewedToday.add(r.cardId);
     if (r.state === State.Review) reviewsCountedToday.add(r.cardId);
+    if (r.state === State.New) newCountedToday.add(r.cardId);
     const card = cardById.get(r.cardId);
     if (card?.noteId && !seenNotes.has(card.noteId)) seenNotes.set(card.noteId, card.id);
   }
@@ -188,7 +214,7 @@ export function buildQueue({ cards, states, reviewsToday = [], settings = {}, no
   const fresh = [];
   for (const s of states) {
     const card = cardById.get(s.cardId);
-    if (!card || card.suspended || !isDue(s, now)) continue;
+    if (!learnable(card, inactive) || !isDue(s, now)) continue;
     const entry = { card, state: s };
     if (s.state === State.Review) review.push(entry);
     else if (s.state === State.New) fresh.push(entry);
@@ -199,36 +225,54 @@ export function buildQueue({ cards, states, reviewsToday = [], settings = {}, no
   review.sort(byDue);
   fresh.sort((a, b) => (a.card.createdAt || '').localeCompare(b.card.createdAt || '') || a.card.id.localeCompare(b.card.id));
 
-  let budget = Math.max(0, limit - reviewsCountedToday.size);
+  const budgets = {
+    review: Math.max(0, limit - reviewsCountedToday.size),
+    fresh: Math.max(0, newLimit - newCountedToday.size),
+  };
+  const backlogs = { review: 0, fresh: 0 };
   const queue = [];
-  let backlog = 0;
   let deferredSiblings = 0;
-  const take = (entries, limited) => {
+  let reviewsInQueue = 0;
+  let newInQueue = 0;
+  const take = (entries, kind) => {
     for (const e of entries) {
       const note = e.card.noteId;
       // Geschwister zurückstellen – aber eine Karte ist nicht ihr eigenes Geschwister
       // (Lernschritt derselben Karte, der heute erneut fällig wird).
       if (note && seenNotes.has(note) && seenNotes.get(note) !== e.card.id) { deferredSiblings += 1; continue; }
-      if (limited) {
-        if (budget <= 0) { backlog += 1; continue; }
-        budget -= 1;
+      if (kind) {
+        if (budgets[kind] <= 0) { backlogs[kind] += 1; continue; }
+        budgets[kind] -= 1;
       }
       if (note && !seenNotes.has(note)) seenNotes.set(note, e.card.id);
       queue.push(e.card);
+      if (e.state.state === State.New) newInQueue += 1; else reviewsInQueue += 1;
     }
   };
-  take(learning, false);
-  take(review, true);
-  take(fresh, false);
+  take(learning, null);
+  take(review, 'review');
+  take(fresh, 'fresh');
 
-  return { queue, dueTotal: learning.length + review.length + fresh.length, backlog, deferredSiblings, reviewedToday: reviewedToday.size };
+  return {
+    queue,
+    dueTotal: learning.length + review.length + fresh.length,
+    backlog: backlogs.review,
+    newBacklog: backlogs.fresh,
+    deferredSiblings,
+    reviewedToday: reviewedToday.size,
+    reviewsDue: learning.length + review.length,
+    reviewsInQueue,
+    newDue: fresh.length,
+    newInQueue,
+  };
 }
 
 /** Übungsliste ohne Terminierung: die am ehesten fälligen Karten, höchstens `limit`. */
-export function buildPracticeQueue({ cards, states, limit = 40 }) {
+export function buildPracticeQueue({ cards, states, decks = [], limit = 40 }) {
   const stateById = new Map(states.map((s) => [s.cardId, s]));
+  const inactive = inactiveDeckIds(decks);
   return cards
-    .filter((c) => !c.suspended)
+    .filter((c) => learnable(c, inactive))
     .map((c) => ({ card: c, due: stateById.get(c.id)?.due || '' }))
     .sort((a, b) => a.due.localeCompare(b.due) || a.card.id.localeCompare(b.card.id))
     .slice(0, Math.max(1, limit))
@@ -236,12 +280,13 @@ export function buildPracticeQueue({ cards, states, limit = 40 }) {
 }
 
 /** Früheste Fälligkeit unter den noch nicht fälligen Karten, oder null. */
-export function nextDue({ cards, states, now = new Date() }) {
+export function nextDue({ cards, states, decks = [], now = new Date() }) {
   const cardById = new Map(cards.map((c) => [c.id, c]));
+  const inactive = inactiveDeckIds(decks);
   let best = null;
   for (const s of states) {
     const card = cardById.get(s.cardId);
-    if (!card || card.suspended) continue;
+    if (!learnable(card, inactive)) continue;
     if (isDue(s, now)) continue;
     if (!best || s.due < best) best = s.due;
   }
