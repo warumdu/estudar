@@ -10,16 +10,29 @@
  * erst dann aus dem Netz. Dadurch startet die App im Flugmodus und antwortet
  * ohne Netzverzögerung. Eine neue Auslieferung bekommt eine neue VERSION; der
  * neue Worker räumt beim Aktivieren alle alten Caches ab.
+ *
+ * Aktualisierung nur auf Wunsch: Ein neu installierter Worker wartet, bis die
+ * Seite ihm { type: 'SKIP_WAITING' } schickt (Knopf „Aktualisieren"). Vorher
+ * läuft die alte Fassung ungestört weiter – auch mitten in einer Lernsession.
  */
 'use strict';
 
 var SCOPE_PATH = new URL('./', self.location.href).pathname; // z. B. "/estudar/"
-var VERSION = '0.0.1'; // bei JEDER Auslieferung erhöhen – sonst sehen installierte Geräte die Änderung nie (tests/pwa.test.js wacht darüber)
+var VERSION = '0.1.0'; // bei JEDER Auslieferung erhöhen – sonst sehen installierte Geräte die Änderung nie (tests/pwa.test.js wacht darüber)
 var CACHE_NAME = 'estudar-v' + VERSION;
 var APP_SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './app/style.css',
+  './app/main.js',
+  './app/db.js',
+  './app/scheduler.js',
+  './app/compare.js',
+  './app/cards.js',
+  './app/backup.js',
+  './app/seed.js',
+  './vendor/ts-fsrs/index.js',
   './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -28,7 +41,12 @@ var APP_SHELL = [
 ];
 
 self.addEventListener('install', function (event) {
-  event.waitUntil(precache().then(function () { return self.skipWaiting(); }));
+  // Kein skipWaiting(): die neue Fassung wartet, bis der Nutzer sie antippt.
+  event.waitUntil(precache());
+});
+
+self.addEventListener('message', function (event) {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', function (event) {

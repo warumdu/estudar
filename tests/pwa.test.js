@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
 import { test } from 'node:test';
 import vm from 'node:vm';
 import { ROOT, pngSize, readText } from './helpers/repo.js';
@@ -46,16 +46,19 @@ test('index.html: iOS-Installations-Tags und Manifest-Verweis', () => {
   assert.match(html, /name="theme-color" content="#0d1210"/);
   assert.match(html, /<link rel="apple-touch-icon" href="icons\/icon-180\.png">/);
   assert.deepEqual(pngSize('icons/icon-180.png'), { width: 180, height: 180 });
-  assert.match(html, /<h1>Hallo<\/h1>/);
-  assert.match(html, /serviceWorker\.register\('sw\.js'/);
+  assert.match(html, /<title>estudar<\/title>/);
+  assert.match(html, /<script type="module" src="app\/main\.js">/);
+  assert.match(readText('app/main.js'), /serviceWorker\.register\('sw\.js'/);
   assert.doesNotMatch(html, /(?:href|src)=["']\//, 'absolute Pfade brechen unter /estudar/');
 });
 
-test('Version ist in package.json, sw.js und index.html identisch', () => {
+test('Version ist in package.json, sw.js, index.html und app/main.js identisch', () => {
   const swVersion = sw.match(/var VERSION = '([^']+)'/)?.[1];
   const htmlVersion = html.match(/id="st-version">([^<]+)</)?.[1];
+  const appVersion = readText('app/main.js').match(/export const APP_VERSION = '([^']+)'/)?.[1];
   assert.equal(swVersion, pkg.version, 'sw.js VERSION weicht von package.json ab');
   assert.equal(htmlVersion, pkg.version, 'index.html Version weicht von package.json ab');
+  assert.equal(appVersion, pkg.version, 'app/main.js APP_VERSION weicht von package.json ab');
 });
 
 /**
@@ -127,7 +130,7 @@ test('sw.js: fetch-Handler – Cache zuerst, Offline-Fallback nur im App-Verzeic
   const { request } = await runServiceWorker();
   const shell = await request('./index.html', { offline: true });
   assert.equal(shell.status, 200, 'App-Hülle muss offline aus dem Cache kommen');
-  assert.match(await shell.text(), /<h1>Hallo<\/h1>/);
+  assert.match(await shell.text(), /<title>estudar<\/title>/);
   const root = await request('./?quelle=homescreen', { mode: 'navigate', offline: true });
   assert.equal(root.status, 200, 'Start-URL mit Query muss offline den Cache treffen');
   const unknownFlat = await request('./unbekannt', { mode: 'navigate', offline: true });
@@ -141,7 +144,11 @@ test('sw.js: fetch-Handler – Cache zuerst, Offline-Fallback nur im App-Verzeic
   assert.equal(foreign, undefined, 'fremde Ursprünge gehen am Service Worker vorbei');
 });
 
-/** Alle relativen Dateien, die index.html und das Manifest referenzieren (ohne sw.js, das der Browser selbst holt). */
+/**
+ * Alle relativen Dateien, die index.html und das Manifest referenzieren (ohne
+ * sw.js, das der Browser selbst holt) – und rekursiv alles, was die JS-Module
+ * per import laden. Fehlt eine davon im Precache, bricht die App offline.
+ */
 function referencedAssets() {
   const refs = new Set();
   for (const m of html.matchAll(/(?:href|src)=["']([^"']+)["']/g)) {
@@ -150,6 +157,15 @@ function referencedAssets() {
     refs.add(ref);
   }
   for (const icon of manifest.icons) refs.add(icon.src);
+  const queue = [...refs].filter((r) => r.endsWith('.js'));
+  while (queue.length) {
+    const file = queue.pop();
+    if (!existsSync(join(ROOT, file))) continue;
+    for (const m of readText(file).matchAll(/(?:from|import)\s*\(?\s*['"](\.{1,2}\/[^'"]+)['"]/g)) {
+      const resolved = posix.normalize(posix.join(posix.dirname(file), m[1]));
+      if (!refs.has(resolved)) { refs.add(resolved); queue.push(resolved); }
+    }
+  }
   return [...refs];
 }
 
@@ -170,17 +186,28 @@ test('sw.js: Precache enthält jede Datei der App-Hülle und die Dateien existie
     assert.ok(shell.includes(expected), `${rel} fehlt in APP_SHELL`);
   }
   assert.ok(fetched.every((u) => u.includes('?v=' + pkg.version)), 'Precache muss den HTTP-Cache per Versionsparameter umgehen');
-  assert.equal(self.skipped, true, 'skipWaiting() fehlt');
+  assert.notEqual(self.skipped, true, 'skipWaiting() darf bei der Installation nicht mehr laufen – die neue Fassung wartet auf den Nutzer');
   assert.equal(self.claimed, true, 'clients.claim() fehlt');
   assert.ok(!stores.has('estudar-v0.0.0-alt'), 'alter estudar-Cache wurde nicht gelöscht');
   assert.ok(stores.has('fremd'), 'fremde Caches dürfen nicht angefasst werden');
 });
 
-test('sw.js: alles, was index.html und Manifest referenzieren, steht in APP_SHELL', async () => {
+test('sw.js: alles, was index.html, Manifest und die Module referenzieren, steht in APP_SHELL', async () => {
   const { APP_SHELL } = await runServiceWorker();
   const shell = new Set(APP_SHELL.map((p) => p.replace(/^\.\//, '')));
-  const missing = referencedAssets().filter((ref) => !shell.has(ref));
+  const refs = referencedAssets();
+  assert.ok(refs.includes('vendor/ts-fsrs/index.js'), 'Modul-Importe müssen rekursiv erkannt werden');
+  const missing = refs.filter((ref) => !shell.has(ref));
   assert.deepEqual(missing, [], 'referenzierte Dateien fehlen im Precache – offline würden sie fehlen');
+});
+
+test('sw.js: skipWaiting() erst auf die Nachricht SKIP_WAITING der Seite', async () => {
+  const { self, listeners } = await runServiceWorker();
+  assert.ok(listeners.message?.length, 'sw.js braucht einen message-Handler');
+  for (const fn of listeners.message) fn({ data: { type: 'irgendwas' } });
+  assert.notEqual(self.skipped, true);
+  for (const fn of listeners.message) fn({ data: { type: 'SKIP_WAITING' } });
+  assert.equal(self.skipped, true);
 });
 
 test('sw.js: VERSION ist gegenüber origin/main erhöht, wenn sich App-Dateien geändert haben', async () => {

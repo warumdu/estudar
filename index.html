@@ -15,139 +15,186 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg: #0d1210;
-      --surface: #151c18;
-      --text: #e8ede9;
-      --muted: #8fa39a;
-      --accent: #7bd3a4;
-      --warn: #f2c94c;
-    }
-    * { box-sizing: border-box; }
-    html { height: 100%; }
-    body {
-      min-height: 100%;
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
-      font-size: 17px;
-      line-height: 1.45;
-      -webkit-text-size-adjust: 100%;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    main {
-      width: 100%;
-      max-width: 28rem;
-      margin: auto; /* zentriert, bleibt aber scrollbar, wenn der Inhalt höher ist als der Bildschirm (Querformat) */
-      padding: 1.5rem;
-      text-align: center;
-    }
-    h1 {
-      font-size: clamp(3.5rem, 22vw, 6.5rem);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      margin: 0 0 0.25rem;
-    }
-    .sub { color: var(--muted); margin: 0 0 2rem; }
-    .status {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      background: var(--surface);
-      border-radius: 1rem;
-      text-align: left;
-    }
-    .status li {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 0.9rem 1.1rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    .status li:first-child { border-top: 0; }
-    .status .label { color: var(--muted); }
-    .status .value { font-weight: 600; text-align: right; }
-    .ok { color: var(--accent); }
-    .pending { color: var(--warn); }
-    .bad { color: #f08c7d; }
-  </style>
+  <link rel="stylesheet" href="app/style.css">
 </head>
 <body>
-  <main>
-    <h1>Hallo</h1>
-    <p class="sub">estudar · Phase 0</p>
-    <ul class="status">
-      <li><span class="label">Gestartet</span><span class="value" id="st-mode" data-state="unknown">…</span></li>
-      <li><span class="label">Offline</span><span class="value pending" id="st-offline" data-state="pending">wird eingerichtet …</span></li>
-      <li><span class="label">Version</span><span class="value" id="st-version">0.0.1</span></li>
-    </ul>
-    <noscript><p class="bad">JavaScript ist abgeschaltet – so kann die App nicht laufen.</p></noscript>
+  <div id="update-hint" class="update-hint" hidden>
+    <span>Neue Fassung verfügbar.</span>
+    <button type="button" id="btn-update" class="btn small">Aktualisieren</button>
+  </div>
+
+  <main id="app">
+    <!-- 1. Heute -->
+    <section id="screen-heute" class="screen" data-screen="heute">
+      <header class="top"><h1>Heute</h1></header>
+      <div class="hero">
+        <div class="bignum" id="heute-count">…</div>
+        <div class="hero-label" id="heute-label">fällige Karten</div>
+        <p class="muted" id="heute-note" hidden></p>
+        <button type="button" id="btn-lernen" class="btn primary wide">Lernen</button>
+        <button type="button" id="btn-ueben" class="btn wide" hidden>Trotzdem üben</button>
+      </div>
+      <ul class="rows">
+        <li><span class="label">Heute gelernt</span><span class="value" id="heute-done">–</span></li>
+        <li><span class="label">Nächste Fälligkeit</span><span class="value" id="heute-next">–</span></li>
+      </ul>
+      <p class="muted small" id="heute-empty" hidden>Noch keine Karten. Lege unter „Karte" eine an oder importiere eine Sicherung.</p>
+    </section>
+
+    <!-- 2. Session -->
+    <section id="screen-session" class="screen session" data-screen="session" hidden>
+      <header class="session-top">
+        <button type="button" id="btn-session-abbrechen" class="icon-btn" aria-label="Session beenden">×</button>
+        <span id="session-progress" class="progress"></span>
+        <button type="button" id="btn-session-edit" class="icon-btn" aria-label="Karte bearbeiten">✎</button>
+      </header>
+      <div id="session-card" class="card-area" role="button" tabindex="0">
+        <div class="q-type" id="q-type"></div>
+        <div class="question" id="q-text"></div>
+        <div class="hint" id="q-hint"></div>
+        <div class="answer" id="a-block" hidden>
+          <div class="answer-text" id="a-text"></div>
+          <div class="example" id="a-example"></div>
+          <div class="verdict" id="a-verdict" hidden></div>
+        </div>
+        <div class="tap-hint" id="tap-hint">Antippen zeigt die Lösung</div>
+      </div>
+      <div id="typing" class="typing" hidden>
+        <div class="accent-bar" id="accent-bar"></div>
+        <form id="typing-form" class="typing-row" autocomplete="off">
+          <input type="text" id="typing-input" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Antwort eingeben">
+          <button type="submit" class="btn primary">Prüfen</button>
+        </form>
+      </div>
+      <div id="grade-bar" class="grade-bar" hidden>
+        <button type="button" class="grade again" data-grade="1"><span class="ivl" data-ivl="1"></span><span class="lbl">Nochmal</span></button>
+        <button type="button" class="grade hard" data-grade="2"><span class="ivl" data-ivl="2"></span><span class="lbl">Schwer</span></button>
+        <button type="button" class="grade good" data-grade="3"><span class="ivl" data-ivl="3"></span><span class="lbl">Gut</span></button>
+        <button type="button" class="grade easy" data-grade="4"><span class="ivl" data-ivl="4"></span><span class="lbl">Leicht</span></button>
+      </div>
+      <div id="session-summary" class="summary" hidden>
+        <h2 id="summary-title">Fertig für heute</h2>
+        <ul class="rows">
+          <li><span class="label">Karten</span><span class="value" id="sum-cards">0</span></li>
+          <li><span class="label">Trefferquote</span><span class="value" id="sum-rate">–</span></li>
+          <li><span class="label">Dauer</span><span class="value" id="sum-duration">–</span></li>
+        </ul>
+        <button type="button" id="btn-sum-backup" class="btn primary wide">Sicherung jetzt</button>
+        <button type="button" id="btn-sum-heute" class="btn wide">Zurück zu Heute</button>
+      </div>
+    </section>
+
+    <!-- 3. Decks -->
+    <section id="screen-decks" class="screen" data-screen="decks" hidden>
+      <header class="top"><h1>Decks</h1><button type="button" id="btn-deck-neu" class="btn small">+ Neues Deck</button></header>
+      <div id="deck-list" class="deck-list"></div>
+      <p class="muted small" id="decks-empty" hidden>Noch kein Deck. Tippe auf „Neues Deck".</p>
+    </section>
+
+    <!-- 4. Karte -->
+    <section id="screen-karte" class="screen" data-screen="karte" hidden>
+      <header class="top"><h1 id="karte-title">Karte</h1></header>
+      <form id="card-form" class="form" autocomplete="off">
+        <label class="field">
+          <span>Deck</span>
+          <select id="f-deck"></select>
+        </label>
+        <div class="field">
+          <span>Typ</span>
+          <div class="seg" id="f-type">
+            <label><input type="radio" name="type" value="vocab" checked><span>Vokabel</span></label>
+            <label><input type="radio" name="type" value="cloze"><span>Lückentext</span></label>
+            <label><input type="radio" name="type" value="conjugation"><span>Konjugation</span></label>
+            <label><input type="radio" name="type" value="sentence"><span>Satz</span></label>
+          </div>
+        </div>
+        <label class="field">
+          <span id="f-front-label">Deutsch</span>
+          <textarea id="f-front" rows="2" autocapitalize="sentences"></textarea>
+        </label>
+        <label class="field" id="f-back-field">
+          <span id="f-back-label">Português</span>
+          <textarea id="f-back" rows="2" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+        </label>
+        <label class="check" id="f-both-field">
+          <input type="checkbox" id="f-both"><span>beide Richtungen (DE→PT und PT→DE, zwei Karten)</span>
+        </label>
+        <label class="field">
+          <span>Beispiel <em>(optional)</em></span>
+          <textarea id="f-example" rows="2" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+        </label>
+        <label class="field">
+          <span>Hinweis <em>(optional, wird mit der Frage gezeigt)</em></span>
+          <input type="text" id="f-hint">
+        </label>
+        <label class="field">
+          <span>Tags <em>(optional, durch Komma getrennt)</em></span>
+          <input type="text" id="f-tags" autocapitalize="off">
+        </label>
+        <p class="error" id="f-error" hidden></p>
+        <button type="submit" id="btn-card-save" class="btn primary wide">Speichern</button>
+        <button type="button" id="btn-card-cancel" class="btn wide" hidden>Abbrechen</button>
+        <button type="button" id="btn-card-delete" class="btn danger wide" hidden>Karte löschen</button>
+      </form>
+    </section>
+
+    <!-- 5. Einstellungen -->
+    <section id="screen-einstellungen" class="screen" data-screen="einstellungen" hidden>
+      <header class="top"><h1>Einstellungen</h1></header>
+      <h2>Lernen</h2>
+      <label class="field row">
+        <span>Zielretention <em>(0,70–0,99)</em></span>
+        <input type="text" id="s-retention" inputmode="decimal" size="5">
+      </label>
+      <label class="field row">
+        <span>Tageslimit für Wiederholungen</span>
+        <input type="text" id="s-limit" inputmode="numeric" size="5">
+      </label>
+      <label class="check">
+        <input type="checkbox" id="s-typing"><span>Vokabeln DE→PT per Eingabefeld statt Antippen</span>
+      </label>
+
+      <h2>Sicherung</h2>
+      <p class="muted small">iOS darf die Daten einer Web-App jederzeit löschen, etwa bei knappem Speicher oder wenn du das Icon entfernst. Die Sicherung ist eine einzige Datei mit allem, was die App weiß. <strong>Sichere nach jeder Lernsitzung, mindestens einmal pro Woche</strong>, und lege die Datei in „Dateien" oder iCloud Drive ab.</p>
+      <ul class="rows">
+        <li><span class="label">Letzte Sicherung</span><span class="value" id="s-last-backup">noch nie</span></li>
+      </ul>
+      <button type="button" id="btn-export" class="btn primary wide">Sicherung exportieren</button>
+      <label class="btn wide file-btn">Sicherung importieren<input type="file" id="s-import" accept=".json,application/json" hidden></label>
+      <div id="import-preview" class="import-preview" hidden></div>
+
+      <h2>App</h2>
+      <ul class="rows">
+        <li><span class="label">Gestartet</span><span class="value" id="st-mode" data-state="unknown">…</span></li>
+        <li><span class="label">Offline</span><span class="value pending" id="st-offline" data-state="pending">wird eingerichtet …</span></li>
+        <li><span class="label">Version</span><span class="value" id="st-version">0.1.0</span></li>
+        <li><span class="label">Karten im Bestand</span><span class="value" id="s-card-count">–</span></li>
+      </ul>
+      <button type="button" id="btn-check-update" class="btn wide">Nach neuer Fassung suchen</button>
+      <p class="muted small" id="update-status"></p>
+    </section>
   </main>
-  <script>
-    (function () {
-      var modeEl = document.getElementById('st-mode');
-      var offlineEl = document.getElementById('st-offline');
 
-      // Läuft die Seite als installierte App (vom Home-Bildschirm) oder im Browser?
-      var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
-        || window.navigator.standalone === true;
-      modeEl.textContent = standalone ? 'als App vom Home-Bildschirm ✓' : 'im Browser';
-      modeEl.className = 'value ' + (standalone ? 'ok' : '');
-      modeEl.dataset.state = standalone ? 'standalone' : 'browser';
+  <nav id="tabs" class="tabs">
+    <a href="#heute" data-tab="heute">Heute</a>
+    <a href="#decks" data-tab="decks">Decks</a>
+    <a href="#karte" data-tab="karte">Karte</a>
+    <a href="#einstellungen" data-tab="einstellungen">Einstellungen</a>
+  </nav>
 
-      function setOffline(state, text) {
-        offlineEl.dataset.state = state;
-        offlineEl.textContent = text;
-        offlineEl.className = 'value ' + (state === 'ready' ? 'ok' : state === 'error' ? 'bad' : 'pending');
-      }
+  <div id="toast" class="toast" hidden></div>
+  <div id="dialog" class="dialog-backdrop" hidden>
+    <div class="dialog" role="dialog" aria-modal="true">
+      <p id="dialog-text"></p>
+      <input type="text" id="dialog-input" hidden>
+      <div class="dialog-actions">
+        <button type="button" id="dialog-cancel" class="btn">Abbrechen</button>
+        <button type="button" id="dialog-ok" class="btn primary">OK</button>
+      </div>
+    </div>
+  </div>
 
-      if (!('serviceWorker' in navigator)) {
-        setOffline('error', 'nicht möglich (Browser ohne Service Worker)');
-        return;
-      }
-
-      // Übernimmt ein neuer Service Worker eine bereits kontrollierte Seite,
-      // wird einmal neu geladen, damit die neue Fassung sichtbar wird.
-      var hadController = !!navigator.serviceWorker.controller;
-      navigator.serviceWorker.addEventListener('controllerchange', function () {
-        if (hadController) { window.location.reload(); }
-        hadController = true;
-      });
-
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (registration) {
-          // register() gelingt auch, wenn die Installation danach scheitert (z. B.
-          // eine Datei der App-Hülle fehlt). Dann wird der neue Worker "redundant".
-          function watchInstall(worker) {
-            if (!worker) return;
-            worker.addEventListener('statechange', function () {
-              if (worker.state === 'redundant' && !navigator.serviceWorker.controller) {
-                setOffline('error', 'Fehler: Installation gescheitert – bitte mit Internet neu laden');
-              }
-            });
-          }
-          watchInstall(registration.installing);
-          registration.addEventListener('updatefound', function () { watchInstall(registration.installing); });
-          // Beim Zurückkehren in die App nach einer neuen Fassung suchen.
-          document.addEventListener('visibilitychange', function () {
-            if (document.visibilityState === 'visible') { registration.update().catch(function () {}); }
-          });
-        }).catch(function (err) {
-          setOffline('error', 'Fehler: ' + (err && err.message ? err.message : err));
-        });
-
-        // "ready" heißt: ein Worker ist aktiv, also ist die App-Hülle im Cache.
-        navigator.serviceWorker.ready.then(function () {
-          setOffline('ready', 'bereit ✓');
-        });
-      });
-    })();
-  </script>
+  <noscript><p class="error">JavaScript ist abgeschaltet – so kann die App nicht laufen.</p></noscript>
+  <script type="module" src="app/main.js"></script>
 </body>
 </html>
