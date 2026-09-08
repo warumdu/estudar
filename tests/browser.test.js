@@ -1,6 +1,7 @@
 // Browser-Test mit dem vorinstallierten Chromium: Seite laden, Service Worker
-// abwarten, Netz kappen, neu laden – und die Seite muss immer noch „Hallo"
-// zeigen. Außerdem: ts-fsrs lässt sich im Browser als ES-Modul importieren.
+// abwarten, Netz kappen, neu laden – und die App muss immer noch starten und
+// die fälligen Karten zeigen. Außerdem: ts-fsrs lässt sich im Browser als
+// ES-Modul importieren. Die Bedienabläufe stehen in app.test.js.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { chromium } from 'playwright';
@@ -30,11 +31,17 @@ after(async () => {
  * Service Worker selbst stellt. Deshalb wird für den Offline-Test der Server
  * tatsächlich beendet – danach gibt es kein Netz mehr, nur noch den Cache. */
 
-test('Seite zeigt „Hallo" und richtet den Service Worker ein', async () => {
+/** Wartet, bis die App gestartet ist und die Zahl der fälligen Karten zeigt. */
+async function waitForApp() {
+  await page.waitForFunction(() => /^\d+$/.test(document.getElementById('heute-count').textContent), null, { timeout: 15000 });
+  return Number(await page.locator('#heute-count').textContent());
+}
+
+test('App startet, zeigt das Probe-Deck als fällig und richtet den Service Worker ein', async () => {
   const response = await page.goto(server.base);
   assert.equal(response.status(), 200);
-  assert.equal(await page.locator('h1').textContent(), 'Hallo');
   assert.equal(await page.title(), 'estudar');
+  assert.equal(await waitForApp(), 20, 'beim ersten Start sind die 20 Probekarten fällig');
   await page.waitForFunction(() => document.getElementById('st-offline').dataset.state === 'ready', null, { timeout: 15000 });
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 15000 });
   assert.equal(await page.locator('#st-offline').textContent(), 'bereit ✓');
@@ -49,7 +56,7 @@ test('App-Hülle liegt vollständig im Cache', async () => {
     const cache = await caches.open(names.find((n) => n.startsWith('estudar-v')));
     return (await cache.keys()).map((r) => new URL(r.url).pathname).sort();
   });
-  for (const p of ['/estudar/', '/estudar/index.html', '/estudar/manifest.webmanifest', '/estudar/icons/icon-180.png', '/estudar/icons/icon-192.png', '/estudar/icons/icon-512.png', '/estudar/icons/icon-512-maskable.png', '/estudar/icons/favicon-32.png']) {
+  for (const p of ['/estudar/', '/estudar/index.html', '/estudar/manifest.webmanifest', '/estudar/app/main.js', '/estudar/app/style.css', '/estudar/vendor/ts-fsrs/index.js', '/estudar/icons/icon-180.png', '/estudar/icons/icon-192.png', '/estudar/icons/icon-512.png', '/estudar/icons/icon-512-maskable.png', '/estudar/icons/favicon-32.png']) {
     assert.ok(cached.includes(p), `${p} fehlt im Cache: ${cached.join(', ')}`);
   }
   const withQuery = await page.evaluate(async () => {
@@ -102,14 +109,22 @@ test('offline: Neuladen und Navigation funktionieren aus dem Cache', async () =>
   await context.setOffline(true);
   try {
     await page.reload();
-    assert.equal(await page.locator('h1').textContent(), 'Hallo');
+    assert.equal(await waitForApp(), 20, 'offline: App startet aus dem Cache, Daten kommen aus IndexedDB');
     await page.waitForFunction(() => document.getElementById('st-offline').dataset.state === 'ready', null, { timeout: 15000 });
+    // Offline lernen und bewerten
+    await page.click('#btn-lernen');
+    await page.click('#session-card');
+    await page.waitForSelector('#grade-bar:not([hidden])');
+    assert.match(await page.locator('[data-ivl="3"]').textContent(), /^in \d+ /, 'Intervall kommt offline aus ts-fsrs');
+    await page.click('[data-grade="4"]');
+    await page.waitForFunction(() => document.getElementById('session-progress').textContent.startsWith('2 /'));
+    assert.equal(await page.evaluate(() => window.estudar.db.count('reviews')), 1, 'Bewertung ist offline gespeichert');
     await page.goto(server.base + 'index.html');
-    assert.equal(await page.locator('h1').textContent(), 'Hallo');
+    assert.equal(await waitForApp(), 19);
     await page.goto(server.base + '?quelle=homescreen');
-    assert.equal(await page.locator('h1').textContent(), 'Hallo', 'Anfrage mit Query muss den Cache treffen');
+    assert.equal(await waitForApp(), 19, 'Anfrage mit Query muss den Cache treffen');
     await page.goto(server.base + 'unbekannt');
-    assert.equal(await page.locator('h1').textContent(), 'Hallo', 'unbekannte Adresse im App-Verzeichnis fällt offline auf index.html zurück');
+    assert.equal(await waitForApp(), 19, 'unbekannte Adresse im App-Verzeichnis fällt offline auf index.html zurück');
     const deep = await page.goto(server.base + 'unbekannt/seite');
     assert.equal(deep.status(), 503, 'tiefere Pfade bekommen keine index.html (relative Verweise würden brechen)');
     await page.goto(server.base);
