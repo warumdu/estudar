@@ -30,8 +30,18 @@ export function parseBackup(text) {
   for (const key of ['decks', 'cards', 'cardStates', 'reviews', 'settings']) {
     if (!Array.isArray(data[key])) throw new Error(`In der Datei fehlt der Abschnitt „${key}".`);
   }
+  const check = (rows, key, what) => {
+    for (const row of rows) {
+      if (!row || typeof row !== 'object' || typeof row[key] !== 'string' || !row[key]) throw new Error(`${what} in der Datei hat keine Kennung (${key}).`);
+    }
+  };
+  check(data.decks, 'id', 'Ein Deck');
+  check(data.cards, 'id', 'Eine Karte');
+  check(data.cardStates, 'cardId', 'Ein Lernzustand');
+  check(data.reviews, 'id', 'Ein Protokolleintrag');
+  check(data.settings, 'key', 'Eine Einstellung');
   for (const c of data.cards) {
-    if (!c || typeof c.id !== 'string' || typeof c.deckId !== 'string') throw new Error('Eine Karte in der Datei hat keine Kennung oder kein Deck.');
+    if (typeof c.deckId !== 'string') throw new Error('Eine Karte in der Datei hat kein Deck.');
   }
   return data;
 }
@@ -66,13 +76,16 @@ export function previewImport(backup, current) {
 }
 
 /**
- * Berechnet den Bestand nach dem Import.
- * mode 'replace': Decks, Karten, Zustände, Einstellungen aus der Datei; Protokoll vereinigt.
+ * Berechnet, was beim Import geschrieben wird.
+ * mode 'replace': Decks, Karten, Zustände, Einstellungen aus der Datei (clear=true).
  * mode 'merge':   Vereinigung nach Kennung, das jeweils Neuere gewinnt; Einstellungen bleiben lokal.
+ * reviews enthält in beiden Fällen nur die Einträge, die lokal noch fehlen – das
+ * Protokoll wird nie gelöscht oder überschrieben, nur ergänzt.
  * @returns {{ decks, cards, cardStates, reviews, settings, clear: boolean }}
  */
 export function applyImport(backup, current, mode) {
-  const reviews = mergeById(current.reviews, backup.reviews, () => false); // Protokoll: nie überschreiben, nur ergänzen
+  const localReviewIds = new Set(current.reviews.map((r) => r.id));
+  const reviews = backup.reviews.filter((r) => !localReviewIds.has(r.id));
   if (mode === 'replace') {
     return {
       clear: true,

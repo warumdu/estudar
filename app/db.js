@@ -116,16 +116,26 @@ export class Database {
     const stores = [...new Set([...Object.keys(puts), ...Object.keys(deletes), ...clear])];
     if (!stores.length) return;
     const tx = this.idb.transaction(stores, 'readwrite');
-    for (const store of clear) tx.objectStore(store).clear();
-    for (const [store, keys] of Object.entries(deletes)) {
-      const os = tx.objectStore(store);
-      for (const key of keys) os.delete(key);
+    const finished = done(tx);
+    try {
+      for (const store of clear) tx.objectStore(store).clear();
+      for (const [store, keys] of Object.entries(deletes)) {
+        const os = tx.objectStore(store);
+        for (const key of keys) os.delete(key);
+      }
+      for (const [store, values] of Object.entries(puts)) {
+        const os = tx.objectStore(store);
+        for (const value of values) os.put(value);
+      }
+    } catch (err) {
+      // Ein ungültiger Datensatz (z. B. ohne Schlüssel) wirft synchron. Ohne abort()
+      // würde die Transaktion mit allem, was schon drin ist, trotzdem festgeschrieben –
+      // bei einem Ersetzen-Import also mit dem clear() und ohne die Daten.
+      try { tx.abort(); } catch { /* schon abgebrochen */ }
+      await finished.catch(() => {});
+      throw err;
     }
-    for (const [store, values] of Object.entries(puts)) {
-      const os = tx.objectStore(store);
-      for (const value of values) os.put(value);
-    }
-    await done(tx);
+    await finished;
   }
 
   /* ---- Einstellungen ---- */

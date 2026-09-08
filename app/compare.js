@@ -7,9 +7,9 @@
 
 const STRIP_MARKS = /[\u0300-\u036f]/g;
 
-/** Kanonische Form: getrimmt, Leerraum zusammengefasst. */
+/** Kanonische Form: NFC (ein Zeichen je Buchstabe), getrimmt, Leerraum zusammengefasst. */
 export function canonical(text) {
-  return String(text ?? '').replace(/\s+/g, ' ').trim();
+  return String(text ?? '').normalize('NFC').replace(/\s+/g, ' ').trim();
 }
 
 /** Vergleichsform: kanonisch, ohne Akzente, klein. */

@@ -39,7 +39,12 @@ test('parseBackup: Rundreise und klare Fehlermeldungen', () => {
   assert.throws(() => parseBackup('kein json'), /kein gültiges JSON/);
   assert.throws(() => parseBackup('{"schema":"anders"}'), /Unbekanntes Format/);
   assert.throws(() => parseBackup(JSON.stringify({ ...file, reviews: undefined })), /fehlt der Abschnitt „reviews"/);
-  assert.throws(() => parseBackup(JSON.stringify({ ...file, cards: [{ front: 'x' }] })), /keine Kennung/);
+  assert.throws(() => parseBackup(JSON.stringify({ ...file, cards: [{ front: 'x' }] })), /Eine Karte .* keine Kennung/);
+  assert.throws(() => parseBackup(JSON.stringify({ ...file, cardStates: [null] })), /Ein Lernzustand .* keine Kennung/);
+  assert.throws(() => parseBackup(JSON.stringify({ ...file, cardStates: [{ due: 'x' }] })), /Ein Lernzustand .* keine Kennung \(cardId\)/);
+  assert.throws(() => parseBackup(JSON.stringify({ ...file, settings: [{ value: 1 }] })), /Eine Einstellung/);
+  assert.throws(() => parseBackup(JSON.stringify({ ...file, decks: [{ name: 'x' }] })), /Ein Deck/);
+  assert.throws(() => parseBackup(JSON.stringify({ ...file, reviews: [{ cardId: 'a' }] })), /Ein Protokolleintrag/);
 });
 
 test('previewImport zählt, was betroffen ist', () => {
@@ -63,7 +68,7 @@ test('Zusammenführen: nach Kennung vereinigt, das Neuere gewinnt, Einstellungen
   assert.equal(r.cardStates.find((s) => s.cardId === 'a').reps, 3, 'Zustand mit späterer Bewertung gewinnt');
   assert.equal(r.cardStates.find((s) => s.cardId === 'b').reps, 1);
   assert.equal(r.cardStates.find((s) => s.cardId === 'x').state, 0, 'fehlender Zustand wird als neu ergänzt');
-  assert.deepEqual(ids(r.reviews), ['a:2026-09-03T00:00:00.000Z', 'a:2026-09-06T00:00:00.000Z']);
+  assert.deepEqual(ids(r.reviews), ['a:2026-09-06T00:00:00.000Z'], 'nur Protokolleinträge, die lokal fehlen, werden geschrieben');
   assert.deepEqual(r.settings, []);
 });
 
@@ -73,7 +78,7 @@ test('Ersetzen: Bestand aus der Datei, Protokoll bleibt vollständig', () => {
   assert.deepEqual(r.cards.map((c) => c.id).sort(), ['a', 'b', 'x']);
   assert.deepEqual(r.decks.map((d) => d.name).sort(), ['Neu', 'Zweites']);
   assert.deepEqual(r.cardStates.map((s) => s.cardId).sort(), ['a', 'b', 'x']);
-  assert.equal(r.reviews.length, 2, 'Protokoll: lokal ∪ Datei, nie gelöscht');
+  assert.deepEqual(r.reviews.map((x) => x.id), ['a:2026-09-06T00:00:00.000Z'], 'Protokoll: nur ergänzen, lokal bleibt unangetastet');
   assert.deepEqual(r.settings, [{ key: 'requestRetention', value: 0.95 }, { key: 'dailyLimit', value: 20 }]);
   assert.throws(() => applyImport(file, local, 'x'), /Unbekannter Importmodus/);
 });

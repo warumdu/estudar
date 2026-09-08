@@ -52,11 +52,13 @@ test('index.html: iOS-Installations-Tags und Manifest-Verweis', () => {
   assert.doesNotMatch(html, /(?:href|src)=["']\//, 'absolute Pfade brechen unter /estudar/');
 });
 
-test('Version ist in package.json, sw.js und index.html identisch', () => {
+test('Version ist in package.json, sw.js, index.html und app/main.js identisch', () => {
   const swVersion = sw.match(/var VERSION = '([^']+)'/)?.[1];
   const htmlVersion = html.match(/id="st-version">([^<]+)</)?.[1];
+  const appVersion = readText('app/main.js').match(/export const APP_VERSION = '([^']+)'/)?.[1];
   assert.equal(swVersion, pkg.version, 'sw.js VERSION weicht von package.json ab');
   assert.equal(htmlVersion, pkg.version, 'index.html Version weicht von package.json ab');
+  assert.equal(appVersion, pkg.version, 'app/main.js APP_VERSION weicht von package.json ab');
 });
 
 /**

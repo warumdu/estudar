@@ -3,7 +3,9 @@
 // – 4 Export, Deck löschen, Import – 5 Zielretention ändert die Intervalle.
 // Dazu: Übung ohne Terminierung, Tippen mit Akzentleiste, Update erst nach Antippen.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 import { chromium } from 'playwright';
 import { startStaticServer } from './helpers/static-server.js';
@@ -166,7 +168,8 @@ test('2. Session bis zum Ende: Intervalle aus ts-fsrs, sofort weiter, Zusammenfa
   assert.equal(await waitForApp(), 0);
   assert.equal(await page.locator('#heute-label').textContent(), 'Nichts fällig');
   assert.equal(await page.locator('#heute-done').textContent(), '21 Karten');
-  assert.notEqual(await page.locator('#heute-next').textContent(), '–');
+  assert.equal(await page.locator('#heute-next').textContent(), 'morgen', 'die zurückgestellte Gegenrichtung ist morgen dran');
+  assert.doesNotMatch(await page.locator('#heute-note').textContent(), /nichts fällig/, 'kein Widerspruch zur wartenden Gegenrichtung');
   assert.ok(await page.locator('#btn-lernen').isHidden());
   assert.ok(!(await page.locator('#btn-ueben').isHidden()), '„Trotzdem üben" wird angeboten');
 });
@@ -339,14 +342,22 @@ test('5. Zielretention 0,95: Einstellung bleibt und die Intervalle ändern sich'
 });
 
 test('4. Export als Datei, Deck löschen, Import ersetzt den Bestand – Protokoll bleibt', async () => {
+  // iOS-Weg: Teilen-Blatt mit Datei. Hier nachgestellt, weil Chromium kein Web Share hat.
   await open('#einstellungen');
+  await page.evaluate(() => {
+    navigator.canShare = () => true;
+    navigator.share = async (data) => { window.__shared = data; };
+  });
   const cardsBefore = await count('cards');
   const reviewsBefore = await count('reviews');
   assert.equal(await page.locator('#s-last-backup').textContent(), 'noch nie');
-  const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-export')]);
-  assert.match(download.suggestedFilename(), /^estudar-sicherung-\d{4}-\d{2}-\d{2}\.json$/);
-  const path = await download.path();
-  const backup = JSON.parse(readFileSync(path, 'utf8'));
+  await page.click('#btn-export');
+  await page.waitForFunction(() => window.__shared);
+  const shared = await page.evaluate(async () => ({ title: window.__shared.title, name: window.__shared.files[0].name, type: window.__shared.files[0].type, text: await window.__shared.files[0].text() }));
+  assert.match(shared.name, /^estudar-sicherung-\d{4}-\d{2}-\d{2}\.json$/);
+  assert.equal(shared.title, shared.name);
+  assert.equal(shared.type, 'application/json');
+  const backup = JSON.parse(shared.text);
   assert.equal(backup.schema, 'estudar-backup/1');
   assert.equal(backup.appVersion, '0.1.0');
   assert.equal(backup.cards.length, cardsBefore);
@@ -355,6 +366,17 @@ test('4. Export als Datei, Deck löschen, Import ersetzt den Bestand – Protoko
   assert.ok(backup.settings.some((s) => s.key === 'requestRetention' && s.value === 0.95));
   assert.ok(backup.decks.some((d) => d.name === 'Probe (löschbar)'));
   await page.waitForFunction(() => document.getElementById('s-last-backup').textContent !== 'noch nie');
+  const path = join(mkdtempSync(join(tmpdir(), 'estudar-')), shared.name);
+  writeFileSync(path, shared.text);
+
+  // Ohne Teilen-Blatt: Download als Ausweg, aber ehrlich – keine bestätigte Sicherung
+  const lastBackup = await page.locator('#s-last-backup').textContent();
+  await page.evaluate(() => { delete navigator.share; delete navigator.canShare; });
+  const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-export')]);
+  assert.equal(download.suggestedFilename(), shared.name);
+  await page.waitForSelector('#toast:not([hidden])');
+  assert.match(await page.locator('#toast').textContent(), /^Teilen nicht möglich/);
+  assert.equal(await page.locator('#s-last-backup').textContent(), lastBackup, 'Download zählt nicht als bestätigte Sicherung');
 
   // Deck löschen mit Rückfrage (im Probe-Deck liegen 20 Probekarten + das Paar „die Reise")
   const probeCards = await page.evaluate(async () => (await window.estudar.db.listCards('deck-probe')).length);
@@ -413,6 +435,20 @@ test('4. Export als Datei, Deck löschen, Import ersetzt den Bestand – Protoko
   await page.setInputFiles('#s-import', { name: 'kaputt.json', mimeType: 'application/json', buffer: Buffer.from('{"schema":"x"}') });
   await page.waitForSelector('#import-preview .error');
   assert.match(await page.locator('#import-preview .error').textContent(), /Unbekanntes Format/);
+});
+
+test('Datenbank: ein ungültiger Datensatz bricht die ganze Transaktion ab – nichts wird gelöscht', async () => {
+  await open('#einstellungen');
+  const before = await page.evaluate(() => window.estudar.db.dumpAll());
+  const message = await page.evaluate(async () => {
+    try {
+      await window.estudar.db.write({ clear: ['settings', 'cardStates'], puts: { cardStates: [{ cardId: 'x', due: '2026-01-01T00:00:00.000Z' }, { due: 'ohne Schlüssel' }] } });
+      return 'kein Fehler';
+    } catch (err) { return err.name; }
+  });
+  assert.notEqual(message, 'kein Fehler');
+  const after = await page.evaluate(() => window.estudar.db.dumpAll());
+  assert.deepEqual(after, before, 'clear() und die gültigen put()s dürfen nicht festgeschrieben werden');
 });
 
 test('Update: Hinweis statt Neuladen, nie während einer Session, Wechsel erst nach Antippen', async () => {

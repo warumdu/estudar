@@ -79,6 +79,11 @@ function currentRoute() {
 function route() {
   const { screen, arg } = currentRoute();
   if (screen === 'session' && !app.session) { location.replace('#heute'); return; }
+  // Verlässt man die Session anders als über ihre Knöpfe (Reiter, Zurück-Geste), ist
+  // sie beendet: Bewertungen sind gespeichert, die Liste wäre später veraltet.
+  // Einzige Ausnahme: die aktuelle Karte bearbeiten (Stift) und zurückkommen.
+  const editingCurrent = screen === 'karte' && arg && app.session?.current?.id === arg;
+  if (app.session && screen !== 'session' && !editingCurrent) app.session = null;
   for (const s of SCREENS) $(`screen-${s}`).hidden = s !== screen;
   for (const a of document.querySelectorAll('#tabs a')) a.classList.toggle('active', a.dataset.tab === screen);
   document.body.classList.toggle('in-session', screen === 'session');
@@ -171,9 +176,11 @@ async function renderHeute() {
   $('heute-count').textContent = String(count);
   $('heute-label').textContent = count === 0 ? 'Nichts fällig' : count === 1 ? 'fällige Karte' : 'fällige Karten';
   const notes = [];
-  if (q.backlog > 0) notes.push(`Insgesamt ${q.dueTotal} fällig – der Rest verteilt sich auf die nächsten Tage (Tageslimit ${app.settings.dailyLimit}).`);
+  const waiting = q.backlog + q.deferredSiblings; // fällig, aber erst an den nächsten Tagen dran
+  if (q.backlog > 0 && count > 0) notes.push(`Insgesamt ${q.dueTotal} fällig – der Rest verteilt sich auf die nächsten Tage (Tageslimit ${app.settings.dailyLimit}).`);
+  if (q.backlog > 0 && count === 0) notes.push(`Tageslimit erreicht – ${q.backlog} weitere Wiederholung${q.backlog === 1 ? '' : 'en'} kommen an den nächsten Tagen.`);
   if (q.deferredSiblings > 0) notes.push(`${q.deferredSiblings} Gegenrichtung${q.deferredSiblings === 1 ? '' : 'en'} kommt erst morgen dran.`);
-  if (count === 0 && anyCards) notes.push('Für heute ist nichts fällig. Du kannst trotzdem üben – das ändert die Terminierung nicht.');
+  if (count === 0 && anyCards && waiting === 0) notes.push('Für heute ist nichts fällig. Du kannst trotzdem üben – das ändert die Terminierung nicht.');
   $('heute-note').textContent = notes.join(' ');
   $('heute-note').hidden = notes.length === 0;
   $('btn-lernen').hidden = count === 0;
@@ -182,7 +189,7 @@ async function renderHeute() {
   const doneToday = new Set(reviewsToday.map((r) => r.cardId)).size;
   $('heute-done').textContent = doneToday === 1 ? '1 Karte' : `${doneToday} Karten`;
   const next = S.nextDue({ cards, states, now });
-  $('heute-next').textContent = count > 0 ? 'jetzt' : next ? S.nextDueText(next, now) : '–';
+  $('heute-next').textContent = count > 0 ? 'jetzt' : waiting > 0 ? 'morgen' : next ? S.nextDueText(next, now) : '–';
 }
 
 /* =========================================================================
@@ -302,24 +309,33 @@ function reveal(typed) {
 
 async function grade(g) {
   const s = app.session;
-  if (!s || !s.revealed || !s.current) return;
+  if (!s || !s.revealed || !s.current || s.saving) return;
   const id = s.current.id;
   const durationMs = performance.now() - s.shownAt;
-  s.answers += 1;
-  if (g !== S.Rating.Again) s.hits += 1;
-  s.seen.add(id);
-  s.revealed = false; // doppeltes Antippen abfangen
-  s.index += 1;
+  let requeue = false;
   if (s.mode === 'learn') {
     const { state, review } = S.applyGrade(app.scheduler, s.currentState, g, new Date(), durationMs);
-    await app.db.recordReview(state, review);
+    s.saving = true; // doppeltes Antippen abfangen, solange geschrieben wird
+    try {
+      await app.db.recordReview(state, review);
+    } catch (err) {
+      // Nichts verstellen: die Karte bleibt aufgedeckt, die Bewertung kann wiederholt werden.
+      toast(`Bewertung nicht gespeichert: ${err.message}`, 4000);
+      return;
+    } finally {
+      s.saving = false;
+    }
     // Lernschritte (1 min, 10 min): die Karte kommt in derselben Session wieder,
     // nach mindestens drei anderen Karten.
     const soon = new Date(state.due).getTime() - Date.now() < 30 * 60_000;
-    if (state.state !== S.State.Review && soon) {
-      s.queue.splice(Math.min(s.index + 3, s.queue.length), 0, id);
-    }
+    requeue = state.state !== S.State.Review && soon;
   }
+  s.answers += 1;
+  if (g !== S.Rating.Again) s.hits += 1;
+  s.seen.add(id);
+  s.revealed = false;
+  s.index += 1;
+  if (requeue) s.queue.splice(Math.min(s.index + 3, s.queue.length), 0, id);
   $('tap-hint').hidden = false;
   await showCard();
 }
@@ -382,7 +398,7 @@ async function renderDecks() {
       deckCards.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
       for (const c of deckCards) {
         ul.append(el('li', { dataset: { cardId: c.id }, onclick: () => go(`#karte/${c.id}`) }, [
-          el('span', { class: 'front', text: c.type === 'cloze' ? c.front.replace(/\{\{c\d+::(.*?)(?:::.*?)?\}\}/g, '[$1]') : c.front }),
+          el('span', { class: 'front', text: c.type === 'cloze' ? parseCloze(c.front).map((p) => (p.cloze !== undefined ? `[${p.cloze}]` : p.text)).join('') : c.front }),
           el('span', { class: 'back', text: c.type === 'cloze' ? TYPE_LABELS.cloze : c.back }),
         ]));
       }
@@ -537,9 +553,15 @@ async function deleteCurrentCard() {
   const ok = await confirmDialog('Diese Karte löschen? Das Protokoll bleibt.', { okLabel: 'Löschen', danger: true });
   if (!ok) return;
   await app.db.deleteCard(id);
-  if (app.session) app.session.queue = app.session.queue.filter((q) => q !== id);
+  const s = app.session;
+  if (s) {
+    // Aus der Liste nehmen; Vorkommen vor der aktuellen Position verschieben den Zeiger.
+    s.index -= s.queue.slice(0, s.index).filter((q) => q === id).length;
+    s.queue = s.queue.filter((q) => q !== id);
+    s.current = null;
+  }
   toast('Karte gelöscht');
-  go('#decks');
+  if (s && !s.finished) go('#session'); else go('#decks');
 }
 
 /* =========================================================================
@@ -598,11 +620,16 @@ async function exportBackup() {
     }
   }
   if (!delivered) {
+    // Kein Teilen-Blatt (Browser ohne Web Share, oder die Aktivierung war verstrichen):
+    // Datei als Download anbieten. Ob sie wirklich gespeichert wurde, sieht die App
+    // nicht – deshalb zählt das nicht als bestätigte Sicherung.
     const url = URL.createObjectURL(file);
     const a = el('a', { href: url, download: name });
     document.body.append(a);
     a.click();
     setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 10_000);
+    toast(`Teilen nicht möglich – ${name} als Download angeboten. Prüfe in „Dateien", ob sie da ist.`, 5000);
+    return;
   }
   const ts = now.toISOString();
   app.settings.lastBackupAt = ts;
@@ -638,10 +665,19 @@ async function importBackupFile(file) {
       const ok = await confirmDialog(`Wirklich ersetzen? ${p.replace.removedCards} Karte${p.replace.removedCards === 1 ? '' : 'n'} und aller Lernfortschritt außerhalb der Datei gehen verloren.`, { okLabel: 'Ersetzen', danger: true });
       if (!ok) return;
     }
-    const result = applyImport(backup, current, mode);
-    await app.db.writeAll(result, { clear: result.clear });
-    if (result.clear) await app.db.setSetting('schemaVersion', 1);
-    await app.db.setSetting('seeded', true);
+    try {
+      const result = applyImport(backup, current, mode);
+      await app.db.writeAll(result, { clear: result.clear });
+      if (result.clear) await app.db.setSetting('schemaVersion', 1);
+      await app.db.setSetting('seeded', true);
+    } catch (err) {
+      // Die Transaktion ist abgebrochen, der Bestand unverändert.
+      box.replaceChildren(
+        el('p', { class: 'error', text: `Import fehlgeschlagen, nichts wurde geändert: ${err.message}` }),
+        el('button', { type: 'button', class: 'btn wide', text: 'Schließen', onclick: () => { box.hidden = true; } }),
+      );
+      return;
+    }
     app.settings = await app.db.getSettings();
     app.scheduler = S.makeScheduler(app.settings);
     app.session = null;

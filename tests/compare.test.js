@@ -26,6 +26,11 @@ test('nur Akzente falsch gilt als richtig, die Abweichung wird markiert', () => 
   assert.deepEqual(r2.marks.filter((m) => m.differs).map((m) => m.char), ['c', 'é', 'ã']);
   const r3 = compareAnswer('comecar', 'começar');
   assert.equal(r3.verdict, 'accents');
+  // Lösung in zerlegter Form (NFD, z. B. aus einer fremden Datei): Markierung bleibt zeichengenau
+  const r4 = compareAnswer('esta', 'esta\u0301');
+  assert.equal(r4.verdict, 'accents');
+  assert.deepEqual(r4.marks.map((m) => `${m.char}${m.differs ? '*' : ''}`), ['e', 's', 't', 'á*']);
+  assert.equal(compareAnswer('está', 'esta\u0301').verdict, 'exact');
 });
 
 test('falsch: Urteil und Markierung der abweichenden Zeichen', () => {
