@@ -591,7 +591,7 @@ test('Sicherung enthält die neuen Felder und lässt sich mit Deckschaltern wied
   await page.click('#btn-export');
   await page.waitForFunction(() => window.__shared && /^estudar-sicherung-/.test(window.__shared.files[0].name));
   const backup = JSON.parse(await page.evaluate(() => window.__shared.files[0].text()));
-  assert.equal(backup.appVersion, '0.2.0');
+  assert.equal(backup.appVersion, '0.2.1');
   assert.ok(backup.decks.some((d) => d.active === false), 'inaktive Decks sind in der Sicherung');
   assert.ok(backup.cards.some((c) => c.sourceId === 'm2d03-001'));
   assert.ok(backup.cards.some((c) => c.suspended === true));

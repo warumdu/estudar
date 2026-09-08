@@ -54,29 +54,35 @@
         <span id="session-progress" class="progress"></span>
         <button type="button" id="btn-session-edit" class="icon-btn" aria-label="Karte bearbeiten">✎</button>
       </header>
+      <!-- Mitte: nur dieser Bereich darf scrollen, und nur bei sehr langem Inhalt. -->
       <div id="session-card" class="card-area" role="button" tabindex="0">
-        <div class="q-type" id="q-type"></div>
-        <div class="question" id="q-text"></div>
-        <div class="hint" id="q-hint"></div>
-        <div class="answer" id="a-block" hidden>
-          <div class="answer-text" id="a-text"></div>
-          <div class="example" id="a-example"></div>
-          <div class="verdict" id="a-verdict" hidden></div>
+        <div class="card-body">
+          <div class="q-type" id="q-type"></div>
+          <div class="question" id="q-text"></div>
+          <div class="hint" id="q-hint"></div>
+          <div class="answer" id="a-block" hidden>
+            <div class="answer-text" id="a-text"></div>
+            <div class="example" id="a-example"></div>
+            <div class="verdict" id="a-verdict" hidden></div>
+          </div>
+          <div class="tap-hint" id="tap-hint">Antippen zeigt die Lösung</div>
         </div>
-        <div class="tap-hint" id="tap-hint">Antippen zeigt die Lösung</div>
       </div>
-      <div id="typing" class="typing" hidden>
-        <div class="accent-bar" id="accent-bar"></div>
-        <form id="typing-form" class="typing-row" autocomplete="off">
-          <input type="text" id="typing-input" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Antwort eingeben">
-          <button type="submit" class="btn primary">Prüfen</button>
-        </form>
-      </div>
-      <div id="grade-bar" class="grade-bar" hidden>
-        <button type="button" class="grade again" data-grade="1"><span class="ivl" data-ivl="1"></span><span class="lbl">Nochmal</span></button>
-        <button type="button" class="grade hard" data-grade="2"><span class="ivl" data-ivl="2"></span><span class="lbl">Schwer</span></button>
-        <button type="button" class="grade good" data-grade="3"><span class="ivl" data-ivl="3"></span><span class="lbl">Gut</span></button>
-        <button type="button" class="grade easy" data-grade="4"><span class="ivl" data-ivl="4"></span><span class="lbl">Leicht</span></button>
+      <!-- Unten: feste Höhe, damit beim Aufdecken nichts springt. Eingabefeld oder Bewertung. -->
+      <div id="session-bottom" class="session-bottom">
+        <div id="typing" class="typing" hidden>
+          <div class="accent-bar" id="accent-bar"></div>
+          <form id="typing-form" class="typing-row" autocomplete="off">
+            <input type="text" id="typing-input" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Antwort eingeben">
+            <button type="submit" class="btn primary">Prüfen</button>
+          </form>
+        </div>
+        <div id="grade-bar" class="grade-bar" hidden>
+          <button type="button" class="grade again" data-grade="1"><span class="ivl" data-ivl="1"></span><span class="lbl">Nochmal</span></button>
+          <button type="button" class="grade hard" data-grade="2"><span class="ivl" data-ivl="2"></span><span class="lbl">Schwer</span></button>
+          <button type="button" class="grade good" data-grade="3"><span class="ivl" data-ivl="3"></span><span class="lbl">Gut</span></button>
+          <button type="button" class="grade easy" data-grade="4"><span class="ivl" data-ivl="4"></span><span class="lbl">Leicht</span></button>
+        </div>
       </div>
       <div id="session-summary" class="summary" hidden>
         <h2 id="summary-title">Fertig für heute</h2>
@@ -237,7 +243,7 @@
       <ul class="rows">
         <li><span class="label">Gestartet</span><span class="value" id="st-mode" data-state="unknown">…</span></li>
         <li><span class="label">Offline</span><span class="value pending" id="st-offline" data-state="pending">wird eingerichtet …</span></li>
-        <li><span class="label">Version</span><span class="value" id="st-version">0.2.0</span></li>
+        <li><span class="label">Version</span><span class="value" id="st-version">0.2.1</span></li>
         <li><span class="label">Karten im Bestand</span><span class="value" id="s-card-count">–</span></li>
       </ul>
       <button type="button" id="btn-check-update" class="btn wide">Nach neuer Fassung suchen</button>
