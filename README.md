@@ -45,9 +45,9 @@ einem eigenen Zweig und muss einmal hinüber.
 
 10. Öffne https://warumdu.github.io/estudar/ **in Safari** auf dem iPhone
     (nicht in Chrome oder einer anderen App). Die Seite zeigt „Hallo".
-11. Tippe auf **Teilen** (Quadrat mit Pfeil nach oben). Je nach iOS-Version sitzt
-    der Knopf unten in der Leiste oder hinter dem Menü **···** rechts in der
-    Adressleiste; dort steht auch direkt **Zum Home-Bildschirm**.
+11. Tippe auf **Teilen** (Quadrat mit Pfeil nach oben). Siehst du unten in der
+    Leiste kein solches Symbol, tippe auf **···** rechts in der Adresszeile: Dort
+    findest du **Teilen** und meist auch direkt **Zum Home-Bildschirm**.
 12. Wähle **Zum Home-Bildschirm** (evtl. nach unten scrollen), dann oben rechts **Hinzufügen**.
 13. Schließe Safari und tippe auf dem Home-Bildschirm auf das grüne Icon **estudar**.
     **Beim ersten Start vom Icon muss das iPhone Internet haben**, bis unten
