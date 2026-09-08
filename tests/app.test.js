@@ -361,13 +361,15 @@ test('4. Export als Datei, Deck löschen, Import ersetzt den Bestand – Protoko
   assert.equal(await page.locator('#s-last-backup').textContent(), 'noch nie');
   await page.click('#btn-export');
   await page.waitForFunction(() => window.__shared);
-  const shared = await page.evaluate(async () => ({ title: window.__shared.title, name: window.__shared.files[0].name, type: window.__shared.files[0].type, text: await window.__shared.files[0].text() }));
+  const shared = await page.evaluate(async () => ({ keys: Object.keys(window.__shared).sort(), fileCount: window.__shared.files.length, name: window.__shared.files[0].name, type: window.__shared.files[0].type, text: await window.__shared.files[0].text() }));
   assert.match(shared.name, /^estudar-sicherung-\d{4}-\d{2}-\d{2}\.json$/);
-  assert.equal(shared.title, shared.name);
+  // Genau eine Datei, kein title/text: daraus machte iOS eine zweite Datei „text.txt".
+  assert.deepEqual(shared.keys, ['files']);
+  assert.equal(shared.fileCount, 1);
   assert.equal(shared.type, 'application/json');
   const backup = JSON.parse(shared.text);
   assert.equal(backup.schema, 'estudar-backup/1');
-  assert.equal(backup.appVersion, '0.2.0');
+  assert.equal(backup.appVersion, '0.2.1');
   assert.equal(backup.cards.length, cardsBefore);
   assert.equal(backup.cardStates.length, cardsBefore);
   assert.equal(backup.reviews.length, reviewsBefore);
@@ -465,8 +467,8 @@ test('Update: Hinweis statt Neuladen, nie während einer Session, Wechsel erst n
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 15000 });
   await page.evaluate(() => { window.__marker = 'nicht neu geladen'; });
   const sw = readText('sw.js');
-  assert.match(sw, /var VERSION = '0\.2\.0'/);
-  server.override('sw.js', sw.replace("var VERSION = '0.2.0'", "var VERSION = '0.2.0-test'"));
+  assert.match(sw, /var VERSION = '0\.2\.1'/);
+  server.override('sw.js', sw.replace("var VERSION = '0.2.1'", "var VERSION = '0.2.1-test'"));
 
   // Während einer Session: kein Hinweis
   await page.click('#btn-ueben');
@@ -483,13 +485,13 @@ test('Update: Hinweis statt Neuladen, nie während einer Session, Wechsel erst n
   await page.waitForSelector('#update-hint:not([hidden])');
   assert.equal(await page.evaluate(() => window.__marker), 'nicht neu geladen');
   const before = await page.evaluate(async () => (await caches.keys()).filter((k) => k.startsWith('estudar-v')).sort());
-  assert.deepEqual(before, ['estudar-v0.2.0', 'estudar-v0.2.0-test'], 'neue Fassung liegt vorgeladen bereit, alte läuft weiter');
+  assert.deepEqual(before, ['estudar-v0.2.1', 'estudar-v0.2.1-test'], 'neue Fassung liegt vorgeladen bereit, alte läuft weiter');
 
   // Antippen → neue Fassung übernimmt, Seite lädt einmal neu
   await Promise.all([page.waitForNavigation(), page.click('#btn-update')]);
   await waitForApp();
   assert.equal(await page.evaluate(() => window.__marker), undefined, 'Seite wurde neu geladen');
-  await page.waitForFunction(async () => (await caches.keys()).filter((k) => k.startsWith('estudar-v')).join() === 'estudar-v0.2.0-test', null, { timeout: 15000 });
+  await page.waitForFunction(async () => (await caches.keys()).filter((k) => k.startsWith('estudar-v')).join() === 'estudar-v0.2.1-test', null, { timeout: 15000 });
   assert.equal(await count('cards'), cardsTotal, 'Daten überleben das Update');
   server.override('sw.js', null);
 });

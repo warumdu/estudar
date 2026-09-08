@@ -13,6 +13,7 @@
   --hard: #f2b25c;
   --easy: #8ad0f0;
   --tabs-h: 3.6rem;
+  --bottom-h: 6.2rem; /* Höhe der Knopfleiste in der Session */
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { height: 100%; }
@@ -89,13 +90,27 @@ h2 { font-size: 1.05rem; color: var(--muted); margin: 1.6rem 0 0.5rem; text-tran
   font-size: 0.95rem;
 }
 
-/* Session */
-.session { display: flex; flex-direction: column; min-height: calc(100vh - var(--tabs-h) - 2rem); min-height: calc(100dvh - 1.5rem); user-select: none; -webkit-user-select: none; }
+/* Session – feste Aufteilung über die sichtbare Höhe, nie scrollen.
+ * --visible-h setzt main.js aus der tatsächlich sichtbaren Höhe (visualViewport):
+ * 100vh ist in der zum Home-Bildschirm hinzugefügten App auf iOS zu groß, die
+ * Knopfleiste rutschte darunter. Oben und unten bleiben die Sicherheitsbereiche
+ * (Statusleiste, Home-Anzeige) frei. */
+body.in-session { height: var(--visible-h, 100vh); min-height: 0; overflow: hidden; }
 body.in-session .tabs { display: none; }
-body.in-session main#app { padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem); }
-.session-top { display: flex; align-items: center; justify-content: space-between; padding: 0.3rem 0; }
+body.in-session main#app { height: 100%; padding-top: 0; padding-bottom: 0; }
+.session {
+  display: flex; flex-direction: column; height: 100%;
+  padding-top: calc(env(safe-area-inset-top) + 0.4rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  user-select: none; -webkit-user-select: none;
+}
+.session-top { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0.3rem 0; }
 .progress { color: var(--muted); font-weight: 600; }
-.card-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1rem 0.5rem; cursor: pointer; }
+/* Mitte: füllt den Rest, Inhalt vertikal zentriert; scrollt nur bei sehr langem Inhalt. */
+.card-area { flex: 1 1 0; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; text-align: center; padding: 0 0.5rem; cursor: pointer; }
+.card-body { margin: auto 0; width: 100%; padding: 0.5rem 0; }
+/* Unten: feste Höhe – Eingabefeld oder die vier Knöpfe, ohne dass sich beim Aufdecken etwas verschiebt. */
+.session-bottom { flex: 0 0 auto; height: var(--bottom-h); }
 .q-type { color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.8rem; }
 .question { font-size: clamp(1.7rem, 7vw, 2.4rem); font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
 .question .gap { display: inline-block; min-width: 3ch; border-bottom: 3px solid var(--accent); color: var(--accent); }
@@ -113,14 +128,14 @@ body.in-session main#app { padding-bottom: calc(env(safe-area-inset-bottom) + 0.
 .verdict.wrong { color: var(--bad); }
 .tap-hint { color: var(--muted); font-size: 0.9rem; margin-top: 2rem; }
 
-.typing { padding: 0.5rem 0; }
-.accent-bar { display: flex; gap: 0.35rem; overflow-x: auto; padding-bottom: 0.5rem; -webkit-overflow-scrolling: touch; }
+.typing { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; gap: 0.4rem; padding-top: 0.4rem; }
+.accent-bar { display: flex; gap: 0.35rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .accent-bar button { appearance: none; border: 0; flex: 0 0 auto; min-width: 2.6rem; height: 2.6rem; border-radius: 0.6rem; background: var(--surface-2); color: var(--text); font: inherit; font-size: 1.2rem; }
 .typing-row { display: flex; gap: 0.5rem; }
 .typing-row input { flex: 1; font: inherit; font-size: 1.2rem; padding: 0.7rem 0.9rem; border-radius: 0.9rem; border: 1px solid rgba(255,255,255,0.15); background: var(--surface); color: var(--text); min-width: 0; }
 
-.grade-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; padding: 0.5rem 0 0; }
-.grade { appearance: none; border: 0; border-radius: 1rem; min-height: 4.6rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer; padding: 0.4rem 0.2rem; }
+.grade-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; padding: 0.5rem 0 0; height: 100%; }
+.grade { appearance: none; border: 0; border-radius: 1rem; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer; padding: 0.4rem 0.2rem; }
 .grade .ivl { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
 .grade .lbl { font-weight: 700; font-size: 1rem; }
 .grade.again .lbl { color: var(--bad); }
@@ -130,7 +145,7 @@ body.in-session main#app { padding-bottom: calc(env(safe-area-inset-bottom) + 0.
 .grade:active { filter: brightness(1.2); }
 .grade-bar.practice .ivl { font-size: 0.7rem; }
 
-.summary { padding: 2rem 0; }
+.summary { flex: 1 1 0; min-height: 0; overflow-y: auto; padding: 2rem 0; }
 .summary h2 { color: var(--text); text-transform: none; letter-spacing: 0; font-size: 1.5rem; margin: 0; }
 
 /* Decks */
@@ -202,7 +217,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 
 /* Hinweis & Dialog */
 .toast { position: fixed; left: 50%; bottom: calc(var(--tabs-h) + env(safe-area-inset-bottom) + 1rem); transform: translateX(-50%); background: var(--accent); color: var(--accent-ink); padding: 0.6rem 1.2rem; border-radius: 2rem; font-weight: 600; z-index: 20; max-width: 90vw; text-align: center; }
-body.in-session .toast { bottom: calc(env(safe-area-inset-bottom) + 6rem); }
+body.in-session .toast { bottom: calc(env(safe-area-inset-bottom) + var(--bottom-h) + 1rem); }
 .dialog-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; z-index: 30; padding: 1rem; padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
 .dialog { background: var(--surface-2); border-radius: 1.2rem; padding: 1.2rem; width: 100%; max-width: 30rem; }
 .dialog p { margin: 0 0 1rem; font-size: 1.05rem; }

@@ -118,8 +118,9 @@ auf dem Home-Bildschirm. Drei Dinge können diese Daten löschen, jeweils ohne W
 „Sicherung exportieren" (Einstellungen) und „Sicherung jetzt" (Sessionende) schreiben
 **eine JSON-Datei** mit allem: Decks, Karten, Lernzustände, Protokoll, Einstellungen.
 Dateiname mit Datum, z. B. `estudar-sicherung-2026-09-08.json`. Auf dem iPhone öffnet
-sich das Teilen-Blatt; wähle **„In Dateien sichern"** (iCloud Drive oder „Auf meinem
-iPhone"). **Sichere nach jeder Lernsitzung, mindestens einmal pro Woche.**
+sich das Teilen-Blatt mit genau dieser einen Datei; wähle **„In Dateien sichern"**
+(iCloud Drive oder „Auf meinem iPhone"). **Sichere nach jeder Lernsitzung, mindestens
+einmal pro Woche.**
 
 „Sicherung importieren" liest so eine Datei, zeigt zuerst, wie viele Karten betroffen
 sind, und bietet zwei Wege:
@@ -156,7 +157,7 @@ hier im Original.
    „Neue Fassung verfügbar – **Aktualisieren**". Tippe darauf; die App lädt einmal neu.
    Erscheint der Hinweis nicht: Einstellungen → **Nach neuer Fassung suchen**, oder
    die App schließen (nach oben wischen) und neu vom Icon starten.
-7. In den Einstellungen muss bei **Version 0.2.0** stehen und bei **Offline: bereit ✓**.
+7. In den Einstellungen muss bei **Version 0.2.1** stehen und bei **Offline: bereit ✓**.
    Erst dann ist die neue Fassung vollständig im Gerät und läuft auch im Flugmodus.
    Dein Bestand aus Phase 1 bleibt dabei erhalten; die neue Einstellung „neue Karten
    pro Tag" steht auf 10.
@@ -231,6 +232,19 @@ Danach Aufräumen nach Belieben: Die Decks „Test · 300 Karten (löschbar)", �
 „Einzel", „teils-fehlerhaft" und die Gruppe „Beispiel-Modul" kannst du löschen.
 
 Gib mir Bescheid, was klappt und was nicht. Bis dahin baue ich nicht weiter.
+
+### E. Prüfliste 0.2.1 (Session auf einem Bildschirm, Sicherung ohne text.txt)
+
+1. **Session ohne Scrollen.** Heute → Lernen. Zähler oben, Frage in der Mitte, unten
+   frei bleibende Fläche. Antippen: die Lösung erscheint unter der Frage, die vier
+   Knöpfe stehen am unteren Rand oberhalb der Home-Anzeige, ohne dass die Seite
+   scrollt oder etwas springt. Das gilt für Karten mit und ohne Beispielsatz und für
+   eine lange Lösung. Bei jeder weiteren Karte stehen die Knöpfe an derselben Stelle.
+2. **Sehr langer Inhalt.** Nur wenn eine Karte wirklich nicht passt, lässt sich der
+   mittlere Bereich mit dem Finger schieben; Kopfzeile und Knöpfe bleiben stehen.
+3. **Sicherung ist eine Datei.** Einstellungen → Sicherung exportieren → im
+   Teilen-Blatt liegt nur `estudar-sicherung-….json`, keine `text.txt` mehr.
+   „In Dateien sichern" und danach Sicherung importieren funktionieren wie bisher.
 
 ## Technik in Kürze
 

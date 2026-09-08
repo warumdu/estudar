@@ -9,7 +9,7 @@ import { buildBackup, backupFileName, backupReminder, parseBackup, previewImport
 import { DeckFormatError, SEPARATORS, detectFormat, parseDeck, planImport, findElsewhere, buildImportRecords, cardPreviewText, deckToFile, deckFileName, deckGroup } from './deckformat.js';
 import { probeDeck } from './seed.js';
 
-export const APP_VERSION = '0.2.0';
+export const APP_VERSION = '0.2.1';
 
 const $ = (id) => document.getElementById(id);
 const SCREENS = ['heute', 'session', 'decks', 'importieren', 'karte', 'einstellungen'];
@@ -233,8 +233,20 @@ function setSessionView({ card = false, typing = false, grades = false, summary 
   $('session-card').hidden = !card;
   $('typing').hidden = !typing;
   $('grade-bar').hidden = !grades;
+  $('session-bottom').hidden = summary; // bleibt sonst immer da (feste Höhe), auch leer vor dem Aufdecken
   $('session-summary').hidden = !summary;
   $('btn-session-edit').hidden = summary;
+}
+
+/**
+ * Tatsächlich sichtbare Höhe als CSS-Variable --visible-h für die Session.
+ * 100vh ist in der zum Home-Bildschirm hinzugefügten App auf iOS größer als der
+ * sichtbare Bereich – die Bewertungsknöpfe rutschten unter den unteren Rand.
+ */
+function updateVisibleHeight() {
+  const h = window.visualViewport?.height || window.innerHeight;
+  if (h > 0) document.documentElement.style.setProperty('--visible-h', `${Math.round(h)}px`);
+  if (document.body.classList.contains('in-session')) window.scrollTo(0, 0);
 }
 
 function renderQuestion(card, revealed) {
@@ -724,7 +736,9 @@ async function saveTyping() {
 async function shareFile(file) {
   if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: file.name });
+      // Nur die Datei, kein title/text: iOS legt aus title oder text sonst eine
+      // zweite Datei „text.txt" ins Teilen-Blatt.
+      await navigator.share({ files: [file] });
       return 'shared';
     } catch (err) {
       if (err && err.name === 'AbortError') return 'aborted';
@@ -1186,6 +1200,12 @@ function bindEvents() {
   });
   $('btn-check-update').addEventListener('click', checkForUpdate);
   $('btn-update').addEventListener('click', acceptUpdate);
+
+  // Sichtbare Höhe für die Session (Drehen, Tastatur, Rückkehr in die App).
+  updateVisibleHeight();
+  window.addEventListener('resize', updateVisibleHeight);
+  window.addEventListener('orientationchange', updateVisibleHeight);
+  window.visualViewport?.addEventListener('resize', updateVisibleHeight);
 
   // Zurück in der App: Heute aktualisieren.
   document.addEventListener('visibilitychange', () => {

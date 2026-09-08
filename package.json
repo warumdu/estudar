@@ -1,6 +1,6 @@
 {
   "name": "estudar",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Offline-Karteikarten-App (PWA) für brasilianisches Portugiesisch. Kein Build-Schritt: die Dateien im Repo werden von GitHub Pages unverändert ausgeliefert. package.json dient nur dem Pinnen der nach vendor/ kopierten Bibliotheken und den Node-Tests in der VM.",
   "type": "module",
