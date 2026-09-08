@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>estudar</title>
+  <meta name="description" content="Vokabeltrainer für brasilianisches Portugiesisch – läuft offline auf dem iPhone.">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0d1210">
+  <link rel="manifest" href="manifest.webmanifest">
+  <!-- iOS: Installation auf dem Home-Bildschirm -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="estudar">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d1210;
+      --surface: #151c18;
+      --text: #e8ede9;
+      --muted: #8fa39a;
+      --accent: #7bd3a4;
+      --warn: #f2c94c;
+    }
+    * { box-sizing: border-box; }
+    html { height: 100%; }
+    body {
+      min-height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+      font-size: 17px;
+      line-height: 1.45;
+      -webkit-text-size-adjust: 100%;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    main {
+      width: 100%;
+      max-width: 28rem;
+      margin: auto; /* zentriert, bleibt aber scrollbar, wenn der Inhalt höher ist als der Bildschirm (Querformat) */
+      padding: 1.5rem;
+      text-align: center;
+    }
+    h1 {
+      font-size: clamp(3.5rem, 22vw, 6.5rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.25rem;
+    }
+    .sub { color: var(--muted); margin: 0 0 2rem; }
+    .status {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      background: var(--surface);
+      border-radius: 1rem;
+      text-align: left;
+    }
+    .status li {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.9rem 1.1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .status li:first-child { border-top: 0; }
+    .status .label { color: var(--muted); }
+    .status .value { font-weight: 600; text-align: right; }
+    .ok { color: var(--accent); }
+    .pending { color: var(--warn); }
+    .bad { color: #f08c7d; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Hallo</h1>
+    <p class="sub">estudar · Phase 0</p>
+    <ul class="status">
+      <li><span class="label">Gestartet</span><span class="value" id="st-mode" data-state="unknown">…</span></li>
+      <li><span class="label">Offline</span><span class="value pending" id="st-offline" data-state="pending">wird eingerichtet …</span></li>
+      <li><span class="label">Version</span><span class="value" id="st-version">0.0.1</span></li>
+    </ul>
+    <noscript><p class="bad">JavaScript ist abgeschaltet – so kann die App nicht laufen.</p></noscript>
+  </main>
+  <script>
+    (function () {
+      var modeEl = document.getElementById('st-mode');
+      var offlineEl = document.getElementById('st-offline');
+
+      // Läuft die Seite als installierte App (vom Home-Bildschirm) oder im Browser?
+      var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        || window.navigator.standalone === true;
+      modeEl.textContent = standalone ? 'als App vom Home-Bildschirm ✓' : 'im Browser';
+      modeEl.className = 'value ' + (standalone ? 'ok' : '');
+      modeEl.dataset.state = standalone ? 'standalone' : 'browser';
+
+      function setOffline(state, text) {
+        offlineEl.dataset.state = state;
+        offlineEl.textContent = text;
+        offlineEl.className = 'value ' + (state === 'ready' ? 'ok' : state === 'error' ? 'bad' : 'pending');
+      }
+
+      if (!('serviceWorker' in navigator)) {
+        setOffline('error', 'nicht möglich (Browser ohne Service Worker)');
+        return;
+      }
+
+      // Übernimmt ein neuer Service Worker eine bereits kontrollierte Seite,
+      // wird einmal neu geladen, damit die neue Fassung sichtbar wird.
+      var hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (hadController) { window.location.reload(); }
+        hadController = true;
+      });
+
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (registration) {
+          // register() gelingt auch, wenn die Installation danach scheitert (z. B.
+          // eine Datei der App-Hülle fehlt). Dann wird der neue Worker "redundant".
+          function watchInstall(worker) {
+            if (!worker) return;
+            worker.addEventListener('statechange', function () {
+              if (worker.state === 'redundant' && !navigator.serviceWorker.controller) {
+                setOffline('error', 'Fehler: Installation gescheitert – bitte mit Internet neu laden');
+              }
+            });
+          }
+          watchInstall(registration.installing);
+          registration.addEventListener('updatefound', function () { watchInstall(registration.installing); });
+          // Beim Zurückkehren in die App nach einer neuen Fassung suchen.
+          document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') { registration.update().catch(function () {}); }
+          });
+        }).catch(function (err) {
+          setOffline('error', 'Fehler: ' + (err && err.message ? err.message : err));
+        });
+
+        // "ready" heißt: ein Worker ist aktiv, also ist die App-Hülle im Cache.
+        navigator.serviceWorker.ready.then(function () {
+          setOffline('ready', 'bereit ✓');
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
