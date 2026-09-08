@@ -41,7 +41,7 @@ test('App startet, zeigt das Probe-Deck als fällig und richtet den Service Work
   const response = await page.goto(server.base);
   assert.equal(response.status(), 200);
   assert.equal(await page.title(), 'estudar');
-  assert.equal(await waitForApp(), 20, 'beim ersten Start sind die 20 Probekarten fällig');
+  assert.equal(await waitForApp(), 10, 'beim ersten Start sind 20 Probekarten fällig, aber nur 10 neue pro Tag');
   await page.waitForFunction(() => document.getElementById('st-offline').dataset.state === 'ready', null, { timeout: 15000 });
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 15000 });
   assert.equal(await page.locator('#st-offline').textContent(), 'bereit ✓');
@@ -109,7 +109,7 @@ test('offline: Neuladen und Navigation funktionieren aus dem Cache', async () =>
   await context.setOffline(true);
   try {
     await page.reload();
-    assert.equal(await waitForApp(), 20, 'offline: App startet aus dem Cache, Daten kommen aus IndexedDB');
+    assert.equal(await waitForApp(), 10, 'offline: App startet aus dem Cache, Daten kommen aus IndexedDB');
     await page.waitForFunction(() => document.getElementById('st-offline').dataset.state === 'ready', null, { timeout: 15000 });
     // Offline lernen und bewerten
     await page.click('#btn-lernen');
@@ -120,11 +120,11 @@ test('offline: Neuladen und Navigation funktionieren aus dem Cache', async () =>
     await page.waitForFunction(() => document.getElementById('session-progress').textContent.startsWith('2 /'));
     assert.equal(await page.evaluate(() => window.estudar.db.count('reviews')), 1, 'Bewertung ist offline gespeichert');
     await page.goto(server.base + 'index.html');
-    assert.equal(await waitForApp(), 19);
+    assert.equal(await waitForApp(), 9, 'eine neue Karte bewertet → 9 neue bleiben für heute');
     await page.goto(server.base + '?quelle=homescreen');
-    assert.equal(await waitForApp(), 19, 'Anfrage mit Query muss den Cache treffen');
+    assert.equal(await waitForApp(), 9, 'Anfrage mit Query muss den Cache treffen');
     await page.goto(server.base + 'unbekannt');
-    assert.equal(await waitForApp(), 19, 'unbekannte Adresse im App-Verzeichnis fällt offline auf index.html zurück');
+    assert.equal(await waitForApp(), 9, 'unbekannte Adresse im App-Verzeichnis fällt offline auf index.html zurück');
     const deep = await page.goto(server.base + 'unbekannt/seite');
     assert.equal(deep.status(), 503, 'tiefere Pfade bekommen keine index.html (relative Verweise würden brechen)');
     await page.goto(server.base);

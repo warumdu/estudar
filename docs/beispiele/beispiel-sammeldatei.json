@@ -1,0 +1,30 @@
+{
+  "schema": "flashdeck/1",
+  "decks": [
+    {
+      "deck": { "name": "Beispiel-Modul · Dia 01", "front_lang": "de-DE", "back_lang": "pt-BR", "tags": ["beispiel", "dia01"] },
+      "cards": [
+        { "id": "bm-d01-001", "type": "vocab", "front": "der Kaffee", "back": "o café", "example": "Tomo café todo dia.", "tags": ["substantiv"] },
+        { "id": "bm-d01-002", "type": "vocab", "front": "das Brot", "back": "o pão", "example": "O pão está fresco.", "tags": ["substantiv"] },
+        { "id": "bm-d01-003", "type": "vocab", "front": "trinken", "back": "beber", "tags": ["verb"], "direction": "both" },
+        { "id": "bm-d01-004", "type": "cloze", "text": "Eu {{c1::tomei}} café da manhã cedo.", "note": "tomar · pretérito perfeito · eu" }
+      ]
+    },
+    {
+      "deck": { "name": "Beispiel-Modul · Dia 02", "tags": ["beispiel", "dia02"] },
+      "cards": [
+        { "id": "bm-d02-001", "type": "vocab", "front": "der Regen", "back": "a chuva", "example": "Hoje tem chuva." },
+        { "id": "bm-d02-002", "type": "vocab", "front": "die Sonne", "back": "o sol" },
+        { "id": "bm-d02-003", "type": "conjugation", "prompt": "chover · pretérito perfeito · ele", "answer": "choveu" }
+      ]
+    },
+    {
+      "deck": { "name": "Beispiel-Modul · Dia 03", "tags": ["beispiel", "dia03"] },
+      "cards": [
+        { "id": "bm-d03-001", "type": "vocab", "front": "die Straße", "back": "a rua" },
+        { "id": "bm-d03-002", "type": "vocab", "front": "die Ecke", "back": "a esquina", "example": "A padaria fica na esquina." },
+        { "id": "bm-d03-003", "type": "sentence", "front": "Ich bin gestern spät angekommen.", "back": "Cheguei tarde ontem." }
+      ]
+    }
+  ]
+}

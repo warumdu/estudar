@@ -1,7 +1,7 @@
 // Sicherung: Aufbau, Prüfung, Vorschau, Ersetzen und Zusammenführen.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { BACKUP_SCHEMA, backupFileName, buildBackup, parseBackup, previewImport, applyImport } from '../app/backup.js';
+import { BACKUP_SCHEMA, backupFileName, backupReminder, buildBackup, parseBackup, previewImport, applyImport } from '../app/backup.js';
 
 const card = (id, updatedAt = '2026-09-01T00:00:00.000Z') => ({ id, noteId: id, deckId: 'd1', type: 'vocab', front: id, back: id, tags: [], createdAt: '2026-09-01T00:00:00.000Z', updatedAt, suspended: false });
 const state = (cardId, last_review = null, reps = 0) => ({ cardId, due: '2026-09-01T00:00:00.000Z', stability: 1, difficulty: 5, elapsed_days: 0, scheduled_days: 0, learning_steps: 0, reps, lapses: 0, state: 0, last_review });
@@ -81,4 +81,14 @@ test('Ersetzen: Bestand aus der Datei, Protokoll bleibt vollständig', () => {
   assert.deepEqual(r.reviews.map((x) => x.id), ['a:2026-09-06T00:00:00.000Z'], 'Protokoll: nur ergänzen, lokal bleibt unangetastet');
   assert.deepEqual(r.settings, [{ key: 'requestRetention', value: 0.95 }, { key: 'dailyLimit', value: 20 }]);
   assert.throws(() => applyImport(file, local, 'x'), /Unbekannter Importmodus/);
+});
+
+test('backupReminder: nach sieben Tagen, oder noch nie – dann erst mit Lernfortschritt', () => {
+  const now = new Date('2026-09-08T20:00:00Z');
+  assert.equal(backupReminder({ lastBackupAt: '2026-09-02T10:00:00Z', reviewCount: 50, now }), null, '6 Tage: ruhig');
+  assert.equal(backupReminder({ lastBackupAt: '2026-09-01T10:00:00Z', reviewCount: 50, now }), null, '7 Tage: noch ruhig');
+  assert.equal(backupReminder({ lastBackupAt: '2026-08-31T10:00:00Z', reviewCount: 0, now }), 'Letzte Sicherung vor 8 Tagen.');
+  assert.equal(backupReminder({ lastBackupAt: '2026-08-01T10:00:00Z', now }), 'Letzte Sicherung vor 38 Tagen.');
+  assert.equal(backupReminder({ lastBackupAt: null, reviewCount: 0, now }), null, 'nichts zu verlieren');
+  assert.equal(backupReminder({ lastBackupAt: undefined, reviewCount: 1, now }), 'Noch keine Sicherung.');
 });

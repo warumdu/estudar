@@ -21,6 +21,20 @@ export function buildBackup({ decks = [], cards = [], cardStates = [], reviews =
   };
 }
 
+export const BACKUP_REMINDER_DAYS = 7;
+
+/**
+ * Erinnerung an die Sicherung für „Heute": Text oder null.
+ * Liegt die letzte Sicherung mehr als sieben Tage zurück, wird erinnert. Gab es
+ * noch nie eine, erst sobald es Lernfortschritt gibt, der verloren gehen könnte.
+ */
+export function backupReminder({ lastBackupAt, reviewCount = 0, now = new Date() }) {
+  if (!lastBackupAt) return reviewCount > 0 ? 'Noch keine Sicherung.' : null;
+  const days = Math.floor((now.getTime() - new Date(lastBackupAt).getTime()) / 86_400_000);
+  if (days <= BACKUP_REMINDER_DAYS) return null;
+  return `Letzte Sicherung vor ${days} Tagen.`;
+}
+
 /** Liest und prüft eine Sicherungsdatei. Wirft einen Error mit deutscher Meldung. */
 export function parseBackup(text) {
   let data;
