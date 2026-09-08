@@ -186,6 +186,16 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .switch span::after { content: ""; position: absolute; top: 0.2rem; left: 0.2rem; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: #fff; transition: transform 0.15s; }
 .switch input:checked + span { background: var(--accent); }
 .switch input:checked + span::after { transform: translateX(1.2rem); }
+.deck-group { background: var(--surface); border-radius: 1rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
+.group-head .name { font-size: 1.15rem; }
+.group-body { padding: 0 0.6rem 0.6rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.group-body .deck { background: var(--surface-2); }
+.deck-group.inactive .group-head .name, .deck-group.inactive .group-head .meta { color: var(--muted); }
+.rows .label em { font-style: normal; opacity: 0.7; font-size: 0.85em; }
+.rows .value.small-value { font-size: 0.9rem; font-weight: 500; }
+.deck-rows .value { font-size: 0.9rem; font-weight: 500; }
+.deck-rows li.sum { font-weight: 700; }
+.deck-rows li.sum .value { font-weight: 700; }
 .deck.inactive .name, .deck.inactive .meta { color: var(--muted); }
 .deck.inactive .name { font-weight: 600; }
 .card-list li.paused .front, .card-list li.paused .back { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.3); }

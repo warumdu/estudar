@@ -87,6 +87,36 @@ Fehlerhafte Karten werden beim Import einzeln mit Grund aufgelistet und
 unbrauchbar (kein gültiges JSON, falsches `schema`, `cards` fehlt), wird nichts
 importiert.
 
+### Sammelform: mehrere Decks in einer Datei
+
+Statt `deck` und `cards` auf oberster Ebene steht eine Liste `decks`; jedes
+Element hat genau den Aufbau der Einzelform (`deck` + `cards`):
+
+```json
+{
+  "schema": "flashdeck/1",
+  "decks": [
+    { "deck": { "name": "Módulo 2 · Dia 01", "tags": ["modulo2", "dia01"] }, "cards": [ { "front": "der Kaffee", "back": "o café" } ] },
+    { "deck": { "name": "Módulo 2 · Dia 02", "tags": ["modulo2", "dia02"] }, "cards": [ { "front": "der Regen", "back": "a chuva" } ] }
+  ]
+}
+```
+
+- `decks` muss mindestens ein Element haben; jedes Element braucht eine nicht
+  leere Liste `cards`. Fehlt `deck.name`, heißt das Deck „Dateiname n".
+- Eine Datei hat entweder `decks` **oder** `deck` + `cards`, nicht beides. Der
+  Import erkennt beides am Inhalt; die Einzelform bleibt vollständig gültig.
+- Jedes Element wird ein eigenes, neues Deck – alle zunächst **inaktiv**. Die
+  Vorschau zeigt je Deck eine Zeile (Name, neue Karten, Dubletten, Fehler) und
+  eine Gesamtsumme; eine Bestätigung, eine Transaktion für alles.
+- Fehlermeldungen nennen das Deck: `Deck 2, Karte 3: Feld back fehlt`.
+
+**Gruppen im Deckbildschirm.** Enthält ein Deckname ` · ` (Leerzeichen,
+Mittelpunkt, Leerzeichen), gilt der Teil davor als Gruppe: „Módulo 2 · Dia 01"
+und „Módulo 2 · Dia 02" erscheinen zusammengeklappt unter „Módulo 2" mit einem
+gemeinsamen Schalter aktiv/inaktiv. Das ist reine Namenskonvention, kein
+eigenes Feld – benenne die Decks eines Moduls also einheitlich.
+
 ---
 
 ## 2. CSV
@@ -175,7 +205,7 @@ Beispiel:
 2. Prüfung gegen dieses Schema; fehlerhafte Karten werden mit Grund aufgelistet und übersprungen.
 3. **Vorschau**, bevor etwas geschrieben wird: Zahl der Einträge, davon neu, Dubletten, fehlerhaft, dazu die ersten zehn Karten.
 4. Zieldeck wählen: neues Deck (Name aus `deck.name` bzw. Dateiname) oder ein bestehendes.
-5. **Dubletten** = gleiche Vorder- und Rückseite wie eine Karte im Zieldeck, verglichen ohne Rücksicht auf Groß-/Kleinschreibung, Akzente und mehrfache Leerzeichen. Sie werden übersprungen, nie überschrieben – der Lernfortschritt der vorhandenen Karte bleibt.
+5. **Dubletten** = gleiche Vorder- und Rückseite wie eine Karte im Zieldeck, verglichen ohne Rücksicht auf Groß-/Kleinschreibung, Akzente und mehrfache Leerzeichen. Sie werden übersprungen, nie überschrieben – der Lernfortschritt der vorhandenen Karte bleibt. Zusätzlich nennt die Vorschau, wie viele der neuen Karten es schon in einem **anderen** Deck gibt (mit dem Namen des ersten betroffenen Decks); diese werden trotzdem importiert, das ist nur ein Hinweis.
 6. Der Schreibvorgang läuft in einer Transaktion: Bricht etwas ab, ist der Bestand unverändert.
 7. Ein frisch angelegtes Deck ist **inaktiv**, bis es unter „Decks" eingeschaltet wird. Neue Karten kommen danach in Dateireihenfolge, höchstens „neue Karten pro Tag" (Standard 10).
 
@@ -193,6 +223,7 @@ Unter `docs/beispiele/` liegen echte, importierbare Dateien:
 |-------|--------|
 | `beispiel-vokabeln.json` | 14 Karten, alle vier Typen, mit `direction: "both"`, mehreren Lücken und Hinweis in der Lücke. |
 | `beispiel-vokabeln.csv`  | 12 Karten als CSV mit Semikolon, BOM, Anführungszeichen, Lückentext und Konjugation. |
+| `beispiel-sammeldatei.json` | Sammelform: drei kleine Decks „Beispiel-Modul · Dia 01–03", ergeben eine Gruppe. |
 | `test-300-karten.json`   | 300 Vokabeln A1/A2 nach Themen, zum Prüfen des Tageslimits. |
 | `teils-fehlerhaft.csv`   | 6 Zeilen, 4 davon absichtlich fehlerhaft – zeigt die Fehlerliste; 2 Karten werden importiert. |
 | `kaputt.json`            | Abgeschnittenes JSON – wird als Ganzes abgelehnt, nichts wird geschrieben. |

@@ -190,18 +190,42 @@ export function parseDeckJson(text, { fileName = '' } = {}) {
   if (data.schema !== DECK_SCHEMA) {
     throw new DeckFormatError(`Feld schema ${present(data.schema) ? `ist „${String(data.schema)}"` : 'fehlt'} – erwartet wird "${DECK_SCHEMA}".`);
   }
+  if (data.decks !== undefined) {
+    // Sammelform: { schema, decks: [ { deck, cards }, … ] } – jedes Element wird ein eigenes Deck.
+    if (data.cards !== undefined) throw new DeckFormatError('Die Datei hat sowohl decks als auch cards auf oberster Ebene – entweder ein Deck (deck + cards) oder mehrere (decks).');
+    if (!Array.isArray(data.decks)) throw new DeckFormatError('Feld decks muss eine Liste von Decks sein, jedes mit deck und cards.');
+    if (data.decks.length === 0) throw new DeckFormatError('Die Liste decks ist leer.');
+    const sources = data.decks.map((entry, i) => {
+      const label = `Deck ${i + 1}`;
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) throw new DeckFormatError(`${label}: kein Objekt mit deck und cards.`);
+      let deck;
+      try { deck = parsedDeckInfo(entry.deck, `${deckNameFromFile(fileName)} ${i + 1}`); }
+      catch (err) { throw new DeckFormatError(`${label}: ${err.message}`); }
+      const where = `${label} („${deck.name}")`;
+      if (!Array.isArray(entry.cards)) throw new DeckFormatError(`${where}: Feld cards fehlt oder ist keine Liste.`);
+      if (entry.cards.length === 0) throw new DeckFormatError(`${where}: Die Liste cards ist leer.`);
+      return validateCards(entry.cards, deck, `${label}, `);
+    });
+    return { format: 'json', multi: true, sources, total: sources.reduce((n, s) => n + s.total, 0), errors: sources.flatMap((s) => s.errors) };
+  }
   const deck = parsedDeckInfo(data.deck, fileName);
   if (!Array.isArray(data.cards)) throw new DeckFormatError('Feld cards fehlt oder ist keine Liste.');
   if (data.cards.length === 0) throw new DeckFormatError('Die Liste cards ist leer.');
+  const source = validateCards(data.cards, deck, '');
+  return { format: 'json', multi: false, ...source, sources: [source] };
+}
+
+/** Prüft eine Kartenliste; `prefix` steht vor der Ortsangabe („Deck 2, Karte 3"). */
+function validateCards(rawCards, deck, prefix) {
   const cards = [];
   const errors = [];
-  data.cards.forEach((raw, i) => {
+  rawCards.forEach((raw, i) => {
     const id = raw && typeof raw === 'object' && present(raw.id) ? ` (${String(raw.id)})` : '';
-    const result = validateCard(raw, `Karte ${i + 1}${id}`);
+    const result = validateCard(raw, `${prefix}Karte ${i + 1}${id}`);
     if (result.error) errors.push(result.error);
     else cards.push(result.card);
   });
-  return { format: 'json', deck, cards, errors, total: data.cards.length };
+  return { deck, cards, errors, total: rawCards.length };
 }
 
 /* =========================================================================
@@ -276,10 +300,15 @@ export function parseDeckCsv(text, { fileName = '', separator = ';' } = {}) {
     else cards.push(result.card);
   }
   const name = deckNameFromFile(fileName);
-  return { format: 'csv', deck: { name, nameFromFile: true, front_lang: 'de-DE', back_lang: 'pt-BR', tags: [] }, cards, errors, total: rows.length, columns };
+  const source = { deck: { name, nameFromFile: true, front_lang: 'de-DE', back_lang: 'pt-BR', tags: [] }, cards, errors, total: rows.length };
+  return { format: 'csv', multi: false, ...source, sources: [source], columns };
 }
 
-/** Liest Text im erkannten Format. */
+/**
+ * Liest Text im erkannten Format. Das Ergebnis hat immer `sources`: eine Liste
+ * aus { deck, cards, errors, total } – bei der Einzelform und bei CSV genau ein
+ * Element, bei der Sammelform (JSON mit `decks`) eines je Deck; `multi` sagt, welche.
+ */
 export function parseDeck(text, { format, fileName = '', separator = ';' }) {
   if (format === 'json') return parseDeckJson(text, { fileName });
   if (format === 'csv') return parseDeckCsv(text, { fileName, separator });
@@ -324,6 +353,37 @@ export function planImport(cards, existingCards = []) {
     fresh.push(c);
   }
   return { fresh, duplicates };
+}
+
+/**
+ * Hinweis, keine Sperre: Wie viele der einzuspielenden Karten gibt es schon in
+ * einem anderen Deck? `otherCards` sind die Karten aller übrigen Decks (mit
+ * deckId), `deckNames` bildet deckId → Name ab.
+ * @returns {{ count: number, firstDeckName: string|null }}
+ */
+export function findElsewhere(fresh, otherCards = [], deckNames = new Map()) {
+  const nameOf = (id) => deckNames.get(id) ?? id;
+  const byKey = new Map();
+  for (const c of otherCards) {
+    const key = cardKey(c.front, c.back);
+    // Kommt eine Karte in mehreren Decks vor, zählt das alphabetisch erste – unabhängig von der Speicherreihenfolge.
+    if (!byKey.has(key) || nameOf(c.deckId).localeCompare(nameOf(byKey.get(key)), 'de') < 0) byKey.set(key, c.deckId);
+  }
+  let count = 0;
+  let firstDeckId = null;
+  for (const c of fresh) {
+    const deckId = byKey.get(cardKey(c.front, c.back));
+    if (deckId === undefined) continue;
+    count += 1;
+    if (firstDeckId === null) firstDeckId = deckId;
+  }
+  return { count, firstDeckName: firstDeckId === null ? null : deckNames.get(firstDeckId) ?? firstDeckId };
+}
+
+/** Gruppe eines Decks aus dem Namen: „Módulo 2 · Dia 01" → „Módulo 2"; ohne „ · " keine Gruppe. */
+export function deckGroup(name) {
+  const i = String(name ?? '').indexOf(' · ');
+  return i > 0 ? name.slice(0, i).trim() || null : null;
 }
 
 function randomBase() {

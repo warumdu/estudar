@@ -436,6 +436,117 @@ test('Import in ein bestehendes AKTIVES Deck: Deck bleibt aktiv, Karten kommen a
   assert.equal(await page.locator('#heute-new').textContent(), '9 von 12');
 });
 
+test('8. Sammeldatei mit drei Decks: je Deck eine Zeile, eine Transaktion, alle inaktiv und gruppiert', async () => {
+  const before = await count('cards');
+  const decksBefore = await count('decks');
+  await goImport();
+  await pick(beispiel('beispiel-sammeldatei.json'));
+  await page.waitForSelector('#imp-preview:not([hidden])');
+  assert.match(await page.locator('#imp-source').textContent(), /JSON, Sammeldatei mit 3 Decks/);
+  assert.deepEqual(await previewNumbers(), { total: '10', fresh: '11', dupes: '0', faulty: '0' });
+  assert.ok(await page.locator('#imp-target').isHidden(), 'kein Zieldeck bei einer Sammeldatei');
+  assert.ok(!(await page.locator('#imp-decks').isHidden()));
+  const rows = await page.$$eval('#imp-decks li', (els) => els.map((e) => `${e.querySelector('.label').textContent} | ${e.querySelector('.value').textContent}`));
+  assert.deepEqual(rows, [
+    'Beispiel-Modul · Dia 01 | 5 neu · 0 Dubletten · 0 fehlerhaft',
+    'Beispiel-Modul · Dia 02 | 3 neu · 0 Dubletten · 0 fehlerhaft',
+    'Beispiel-Modul · Dia 03 | 3 neu · 0 Dubletten · 0 fehlerhaft',
+    'Gesamt, 3 Decks – alle zunächst inaktiv | 11 neu · 0 Dubletten · 0 fehlerhaft',
+  ]);
+  assert.equal(await page.locator('#btn-imp-confirm').textContent(), '11 Karten in 3 Decks importieren');
+  assert.equal(await page.$$eval('#imp-sample li', (els) => els.length), 10);
+
+  // Bricht ein Deck ab, wird nichts geschrieben – eine Transaktion für alles
+  await page.evaluate(() => {
+    const db = window.estudar.db;
+    const orig = db.write.bind(db);
+    db.write = async (ops) => {
+      const lastDeck = ops.adds?.decks?.at(-1);
+      if (lastDeck) await orig({ puts: { decks: [{ ...lastDeck, name: 'Belegt' }] } }); // Schlüssel des dritten Decks vorab belegen
+      db.write = orig;
+      return orig(ops);
+    };
+  });
+  await page.click('#btn-imp-confirm');
+  await page.waitForFunction(() => /Import fehlgeschlagen, nichts wurde geändert/.test(document.getElementById('imp-error').textContent) && !document.getElementById('imp-error').hidden);
+  assert.equal(await count('cards'), before, 'keine Karte geschrieben');
+  assert.equal(await count('decks'), decksBefore + 1, 'nur das vorab belegte Deck');
+  const stray = await page.evaluate(async () => (await window.estudar.db.listDecks()).find((d) => d.name === 'Belegt').id);
+  await page.evaluate((id) => window.estudar.db.deleteDeck(id), stray);
+
+  await page.click('#btn-imp-confirm');
+  await page.waitForSelector('#screen-decks:not([hidden])');
+  assert.equal(await count('cards'), before + 11);
+  assert.equal(await count('decks'), decksBefore + 3);
+  assert.match(await page.locator('#toast').textContent(), /11 Karten in 3 Decks importiert – alle noch inaktiv/);
+  const group = page.locator('.deck-group[data-group="Beispiel-Modul"]');
+  await group.waitFor();
+  assert.equal(await group.locator('.group-head .meta').textContent(), '3 Decks · 11 Karten · 0 fällig · inaktiv');
+  const names = await group.locator('.deck .name').allTextContents();
+  assert.deepEqual(names, ['Dia 01', 'Dia 02', 'Dia 03'], 'in der Gruppe ohne den Gruppenteil');
+  assert.deepEqual(await group.locator('.deck').evaluateAll((els) => els.map((e) => e.dataset.active)), ['false', 'false', 'false']);
+  // Decks ohne Trennzeichen stehen einzeln darüber
+  const order = await page.$$eval('#deck-list > *', (els) => els.map((e) => e.className.split(' ')[0]));
+  assert.ok(order.indexOf('deck') < order.indexOf('deck-group'), `einzelne Decks vor den Gruppen: ${order}`);
+  assert.ok(await page.$('.deck-group[data-group="Beispiel"]'), 'auch „Beispiel · Módulo 2 · Dia 03" bildet eine Gruppe');
+  // Zuklappen und aufklappen
+  await group.locator('.group-head .name').click();
+  await page.waitForFunction(() => document.querySelector('.deck-group[data-group="Beispiel-Modul"]')?.dataset.open === 'false');
+  assert.equal(await page.$$eval('.deck-group[data-group="Beispiel-Modul"] .deck', (els) => els.length), 0);
+  await page.click('.deck-group[data-group="Beispiel-Modul"] .group-head .name');
+  await page.waitForFunction(() => document.querySelector('.deck-group[data-group="Beispiel-Modul"]')?.dataset.open === 'true');
+});
+
+test('9. Gruppe per Schalter aktivieren, Hinweis beim Einschalten, Einzelschalter in der Gruppe', async () => {
+  await page.evaluate(async () => { await window.estudar.db.setSetting('newLimit', 4); window.estudar.settings.newLimit = 4; });
+  await page.evaluate(() => { location.hash = '#decks'; window.estudar.route(); });
+  const group = page.locator('.deck-group[data-group="Beispiel-Modul"]');
+  await group.waitFor();
+  await group.locator('.group-head .switch').click();
+  await page.waitForFunction(() => document.querySelector('.deck-group[data-group="Beispiel-Modul"] .group-head .meta')?.textContent === '3 Decks · 11 Karten · 11 fällig');
+  assert.deepEqual(await group.locator('.deck').evaluateAll((els) => els.map((e) => e.dataset.active)), ['true', 'true', 'true']);
+  assert.match(await page.locator('#toast').textContent(), /^Gruppe „Beispiel-Modul" ist aktiv \(3 Decks\)\. 11 neue Karten, bei 4 pro Tag rund 3 Tage\.$/);
+  assert.ok(await page.locator('#dialog').isHidden(), 'kein Dialog');
+  await group.locator('.group-head .switch').click();
+  await page.waitForFunction(() => /· inaktiv$/.test(document.querySelector('.deck-group[data-group="Beispiel-Modul"] .group-head .meta')?.textContent || ''));
+  assert.deepEqual(await group.locator('.deck').evaluateAll((els) => els.map((e) => e.dataset.active)), ['false', 'false', 'false']);
+  // Einzelnes Deck in der Gruppe: 3 neue Karten ≤ Limit 4 → kein Hinweis
+  await group.locator('.deck').nth(1).locator('.switch').click();
+  await page.waitForFunction(() => /1 von 3 aktiv$/.test(document.querySelector('.deck-group[data-group="Beispiel-Modul"] .group-head .meta')?.textContent || ''));
+  assert.equal(await page.locator('#toast').textContent(), '„Beispiel-Modul · Dia 02" ist aktiv.');
+  // Einzelnes Deck über dem Limit: 5 neue Karten, bei 4 pro Tag rund 2 Tage
+  await group.locator('.deck').nth(0).locator('.switch').click();
+  await page.waitForFunction(() => /2 von 3 aktiv$/.test(document.querySelector('.deck-group[data-group="Beispiel-Modul"] .group-head .meta')?.textContent || ''));
+  assert.equal(await page.locator('#toast').textContent(), '„Beispiel-Modul · Dia 01" ist aktiv. 5 neue Karten, bei 4 pro Tag rund 2 Tage.');
+  await page.evaluate(async () => { await window.estudar.db.setSetting('newLimit', 10); window.estudar.settings.newLimit = 10; });
+});
+
+test('10. Einzeldatei funktioniert unverändert – mit Hinweis auf Karten in anderen Decks', async () => {
+  const before = await count('cards');
+  await goImport();
+  await pick(beispiel('beispiel-vokabeln.json'));
+  await page.waitForSelector('#imp-preview:not([hidden])');
+  assert.ok(!(await page.locator('#imp-target').isHidden()), 'Einzelform: Zieldeck wählbar');
+  assert.ok(await page.locator('#imp-decks').isHidden());
+  assert.deepEqual(await previewNumbers(), { total: '14', fresh: '16', dupes: '0', faulty: '0' });
+  assert.equal(await page.locator('#imp-elsewhere').textContent(), '16 (zuerst in „Beispiel · Módulo 2 · Dia 03")');
+  await page.fill('#imp-deck-name', 'Einzel');
+  await page.click('#btn-imp-confirm');
+  await page.waitForSelector('#screen-decks:not([hidden])');
+  assert.equal(await count('cards'), before + 16, 'trotzdem importiert – Hinweis, keine Sperre');
+  // Ins bestehende Deck: Dubletten dort, „anderes Deck" zählt nur die übrigen
+  await goImport();
+  await pick(beispiel('beispiel-sammeldatei.json'));
+  await page.waitForSelector('#imp-preview:not([hidden])');
+  assert.equal(await page.locator('#imp-elsewhere').textContent(), '11 (zuerst in „Beispiel-Modul · Dia 01")');
+  await page.click('#btn-imp-cancel');
+  await goImport();
+  await pick({ name: 'neu.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ schema: 'flashdeck/1', cards: [{ front: 'ganz neu', back: 'novo' }] })) });
+  await page.waitForSelector('#imp-preview:not([hidden])');
+  assert.equal(await page.locator('#imp-elsewhere').textContent(), '0');
+  await page.click('#btn-imp-cancel');
+});
+
 test('7. Erinnerung an die Sicherung: ruhige Zeile nach sieben Tagen, verschwindet nach dem Sichern', async () => {
   await open();
   // Es gibt inzwischen Bewertungen (300er-Test), aber noch keine Sicherung → Erinnerung

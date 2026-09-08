@@ -123,18 +123,24 @@
           <li><span class="label">Neue Karten</span><span class="value ok" id="imp-new">–</span></li>
           <li><span class="label">Dubletten (werden übersprungen)</span><span class="value" id="imp-dupes">–</span></li>
           <li><span class="label">Fehlerhaft (werden übersprungen)</span><span class="value" id="imp-faulty">–</span></li>
+          <li><span class="label">Schon in einem anderen Deck <em>(werden trotzdem importiert)</em></span><span class="value" id="imp-elsewhere">–</span></li>
         </ul>
 
-        <h2>Zieldeck</h2>
-        <label class="field">
-          <span>Deck</span>
-          <select id="imp-deck"></select>
-        </label>
-        <label class="field" id="imp-deck-name-field">
-          <span>Name des neuen Decks</span>
-          <input type="text" id="imp-deck-name">
-        </label>
-        <p class="muted small" id="imp-deck-note"></p>
+        <h2 id="imp-decks-title" hidden>Decks in der Datei</h2>
+        <ul class="rows deck-rows" id="imp-decks" hidden></ul>
+
+        <div id="imp-target">
+          <h2>Zieldeck</h2>
+          <label class="field">
+            <span>Deck</span>
+            <select id="imp-deck"></select>
+          </label>
+          <label class="field" id="imp-deck-name-field">
+            <span>Name des neuen Decks</span>
+            <input type="text" id="imp-deck-name">
+          </label>
+          <p class="muted small" id="imp-deck-note"></p>
+        </div>
 
         <h2 id="imp-sample-title">Die ersten zehn Karten</h2>
         <ul class="card-list plain" id="imp-sample"></ul>

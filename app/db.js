@@ -197,9 +197,9 @@ export class Database {
    * Alles wird mit add() geschrieben – existiert ein Schlüssel schon, bricht die
    * ganze Transaktion ab und der Bestand bleibt unverändert.
    */
-  async importCards({ deck = null, cards, states }) {
+  async importCards({ decks = [], cards, states }) {
     const adds = { cards, cardStates: states };
-    if (deck) adds.decks = [deck];
+    if (decks.length) adds.decks = decks;
     await this.write({ adds });
   }
 

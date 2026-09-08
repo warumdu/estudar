@@ -6,7 +6,7 @@ import * as S from './scheduler.js';
 import { compareAnswer, ACCENT_CHARS } from './compare.js';
 import { TYPE_LABELS, parseCloze, needsTyping, typedSolution, createCards, validateCardInput, splitTags } from './cards.js';
 import { buildBackup, backupFileName, backupReminder, parseBackup, previewImport, applyImport } from './backup.js';
-import { DeckFormatError, SEPARATORS, detectFormat, parseDeck, planImport, buildImportRecords, cardPreviewText, deckToFile, deckFileName } from './deckformat.js';
+import { DeckFormatError, SEPARATORS, detectFormat, parseDeck, planImport, findElsewhere, buildImportRecords, cardPreviewText, deckToFile, deckFileName, deckGroup } from './deckformat.js';
 import { probeDeck } from './seed.js';
 
 export const APP_VERSION = '0.2.0';
@@ -25,6 +25,7 @@ const app = {
   editingCardId: null,
   lastDeckId: null,
   expandedDecks: new Set(),
+  collapsedGroups: new Set(), // Gruppen im Deckbildschirm, die zugeklappt sind
   imp: null,            // laufender Import (siehe importPickFile)
 };
 
@@ -389,19 +390,31 @@ async function renderDecks() {
   list.replaceChildren();
   $('decks-empty').hidden = decks.length > 0;
   decks.sort((a, b) => a.name.localeCompare(b.name, 'de'));
-  for (const deck of decks) {
+
+  /** Zahlen zu einem Deck: Karten, fällig, pausiert, neu (nie bewertet). */
+  const infoOf = (deck) => {
     const deckCards = cards.filter((c) => c.deckId === deck.id);
     const active = S.isDeckActive(deck);
     const due = deckCards.filter((c) => !c.suspended && stateById.has(c.id) && S.isDue(stateById.get(c.id), now)).length;
     const paused = deckCards.filter((c) => c.suspended).length;
+    const fresh = deckCards.filter((c) => !c.suspended && stateById.get(c.id)?.state === S.State.New).length;
+    return { deckCards, active, due, paused, fresh };
+  };
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const makeSwitch = (label, checked, onchange) => {
+    const input = el('input', { type: 'checkbox', 'aria-label': label, onchange: (e) => onchange(e.target.checked) });
+    input.checked = checked;
+    // Klicks auf den Schalter klappen nichts auf oder zu.
+    return el('label', { class: 'switch', onclick: (e) => e.stopPropagation() }, [input, el('span')]);
+  };
+
+  const deckNode = (deck, shownName) => {
+    const { deckCards, active, due, paused, fresh } = infoOf(deck);
     const open = app.expandedDecks.has(deck.id);
-    const meta = `${deckCards.length} Karte${deckCards.length === 1 ? '' : 'n'} · ${active ? `${due} fällig` : 'inaktiv'}${paused ? ` · ${paused} pausiert` : ''}`;
-    // Schalter aktiv/inaktiv: Klicks darauf klappen das Deck nicht auf.
-    const switchInput = el('input', { type: 'checkbox', 'aria-label': `Deck „${deck.name}" aktiv`, onchange: (e) => setDeckActive(deck, e.target.checked) });
-    switchInput.checked = active;
-    const toggle = el('label', { class: 'switch', onclick: (e) => e.stopPropagation() }, [switchInput, el('span')]);
+    const meta = `${plural(deckCards.length, 'Karte', 'Karten')} · ${active ? `${due} fällig` : 'inaktiv'}${paused ? ` · ${paused} pausiert` : ''}`;
+    const toggle = makeSwitch(`Deck „${deck.name}" aktiv`, active, (on) => setDeckActive(deck, on, fresh));
     const head = el('div', { class: 'deck-head', onclick: () => { app.expandedDecks.has(deck.id) ? app.expandedDecks.delete(deck.id) : app.expandedDecks.add(deck.id); renderDecks(); } }, [
-      el('span', { class: 'name', text: deck.name }),
+      el('span', { class: 'name', text: shownName, title: deck.name }),
       el('span', { class: 'meta', text: meta }),
       toggle,
       el('span', { class: 'muted', text: open ? '▾' : '▸' }),
@@ -425,6 +438,34 @@ async function renderDecks() {
       if (!deckCards.length) ul.append(el('li', { class: 'muted', text: 'Keine Karten in diesem Deck.' }));
       node.append(el('div', { class: 'deck-body' }, [actions, ul]));
     }
+    return node;
+  };
+
+  // Decks ohne „ · " einzeln oben, dann je Gruppe ein zusammenklappbarer Abschnitt.
+  const groups = new Map();
+  for (const deck of decks) {
+    const group = deckGroup(deck.name);
+    if (!group) list.append(deckNode(deck, deck.name));
+    else groups.set(group, [...(groups.get(group) || []), deck]);
+  }
+  for (const [group, members] of groups) {
+    const infos = members.map(infoOf);
+    const open = !app.collapsedGroups.has(group);
+    const cardCount = infos.reduce((n, i) => n + i.deckCards.length, 0);
+    const due = infos.reduce((n, i) => n + (i.active ? i.due : 0), 0);
+    const activeCount = infos.filter((i) => i.active).length;
+    const fresh = infos.reduce((n, i) => n + (i.active ? 0 : i.fresh), 0);
+    const state = activeCount === members.length ? '' : activeCount === 0 ? ' · inaktiv' : ` · ${activeCount} von ${members.length} aktiv`;
+    const meta = `${plural(members.length, 'Deck', 'Decks')} · ${plural(cardCount, 'Karte', 'Karten')} · ${due} fällig${state}`;
+    const toggle = makeSwitch(`Gruppe „${group}" aktiv`, activeCount === members.length, (on) => setGroupActive(group, members, on, fresh));
+    const head = el('div', { class: 'deck-head group-head', onclick: () => { app.collapsedGroups.has(group) ? app.collapsedGroups.delete(group) : app.collapsedGroups.add(group); renderDecks(); } }, [
+      el('span', { class: 'name', text: group }),
+      el('span', { class: 'meta', text: meta }),
+      toggle,
+      el('span', { class: 'muted', text: open ? '▾' : '▸' }),
+    ]);
+    const node = el('div', { class: `deck-group${activeCount === 0 ? ' inactive' : ''}`, dataset: { group, open: open ? 'true' : 'false' } }, [head]);
+    if (open) node.append(el('div', { class: 'group-body' }, members.map((d) => deckNode(d, d.name.slice(group.length + 3).trim() || d.name))));
     list.append(node);
   }
 }
@@ -439,9 +480,27 @@ async function createDeck() {
   return deck;
 }
 
-async function setDeckActive(deck, active) {
+/** Ruhiger Satz beim Einschalten: „300 neue Karten, bei 10 pro Tag rund 30 Tage." – oder leer. */
+function activationHint(fresh) {
+  const limit = app.settings.newLimit;
+  if (fresh <= limit) return '';
+  if (limit <= 0) return ` ${fresh} neue Karten – „neue Karten pro Tag" steht auf 0.`;
+  return ` ${fresh} neue Karten, bei ${limit} pro Tag rund ${Math.ceil(fresh / limit)} Tage.`;
+}
+
+async function setDeckActive(deck, active, fresh = 0) {
   await app.db.saveDeck({ ...deck, active, updatedAt: new Date().toISOString() });
-  toast(active ? `„${deck.name}" ist aktiv` : `„${deck.name}" ist pausiert – keine Karten in der Session`);
+  const hint = active ? activationHint(fresh) : '';
+  toast(active ? `„${deck.name}" ist aktiv.${hint}` : `„${deck.name}" ist pausiert – keine Karten in der Session`, hint ? 5000 : 1800);
+  renderDecks();
+}
+
+/** Schalter in der Gruppenkopfzeile: alle Decks der Gruppe auf einmal, eine Transaktion. */
+async function setGroupActive(group, members, active, fresh = 0) {
+  const ts = new Date().toISOString();
+  await app.db.write({ puts: { decks: members.map((d) => ({ ...d, active, updatedAt: ts })) } });
+  const hint = active ? activationHint(fresh) : '';
+  toast(active ? `Gruppe „${group}" ist aktiv (${members.length} Decks).${hint}` : `Gruppe „${group}" ist pausiert (${members.length} Decks)`, hint ? 5000 : 1800);
   renderDecks();
 }
 
@@ -512,6 +571,7 @@ async function fillDeckSelect(selectedId) {
 async function renderKarte(cardId) {
   app.editingCardId = cardId;
   $('f-error').hidden = true;
+  $('f-suspended-field').hidden = !cardId; // sofort, nicht erst nach dem Laden der Decks
   const radios = document.querySelectorAll('#f-type input');
   if (cardId) {
     const card = await app.db.getCard(cardId);
@@ -817,46 +877,77 @@ async function importParse() {
   }
   imp.parsed = parsed;
   imp.target = '__new__';
-  imp.newName = parsed.deck.name;
+  imp.newName = parsed.multi ? '' : parsed.deck.name;
   await renderImportPreview();
 }
 
-/** Schritt 4 und 5: Vorschau – bevor irgendetwas geschrieben wird – und Zieldeck. */
+/**
+ * Schritt 4 und 5: Vorschau – bevor irgendetwas geschrieben wird – und Zieldeck.
+ * Einzelform: Zieldeck wählbar (neu oder bestehend). Sammelform: jedes Element
+ * wird ein neues, inaktives Deck; je Deck eine Zeile, eine Gesamtsumme.
+ */
 async function renderImportPreview() {
   const imp = app.imp;
   const parsed = imp.parsed;
   const decks = (await app.db.listDecks()).sort((a, b) => a.name.localeCompare(b.name, 'de'));
-  const sel = $('imp-deck');
-  sel.replaceChildren(el('option', { value: '__new__', text: 'Neues Deck' }));
-  for (const d of decks) sel.append(el('option', { value: d.id, text: S.isDeckActive(d) ? d.name : `${d.name} (inaktiv)` }));
-  if (!decks.some((d) => d.id === imp.target)) imp.target = '__new__';
-  sel.value = imp.target;
-  $('imp-deck-name-field').hidden = imp.target !== '__new__';
-  $('imp-deck-name').value = imp.newName;
-  const targetDeck = decks.find((d) => d.id === imp.target) || null;
-  const existing = targetDeck ? await app.db.listCards(targetDeck.id) : [];
-  const plan = planImport(parsed.cards, existing);
-  imp.plan = plan;
+  const deckNames = new Map(decks.map((d) => [d.id, d.name]));
+  const allCards = await app.db.listCards();
+  let targetDeck = null;
+  let plans;
+  if (parsed.multi) {
+    $('imp-target').hidden = true;
+    plans = parsed.sources.map((src) => ({ src, plan: planImport(src.cards, []) }));
+  } else {
+    $('imp-target').hidden = false;
+    const sel = $('imp-deck');
+    sel.replaceChildren(el('option', { value: '__new__', text: 'Neues Deck' }));
+    for (const d of decks) sel.append(el('option', { value: d.id, text: S.isDeckActive(d) ? d.name : `${d.name} (inaktiv)` }));
+    if (!decks.some((d) => d.id === imp.target)) imp.target = '__new__';
+    sel.value = imp.target;
+    $('imp-deck-name-field').hidden = imp.target !== '__new__';
+    $('imp-deck-name').value = imp.newName;
+    targetDeck = decks.find((d) => d.id === imp.target) || null;
+    const existing = targetDeck ? allCards.filter((c) => c.deckId === targetDeck.id) : [];
+    plans = [{ src: parsed.sources[0], plan: planImport(parsed.cards, existing) }];
+    const sameName = !targetDeck && decks.find((d) => d.name.trim().toLowerCase() === (imp.newName || '').trim().toLowerCase());
+    $('imp-deck-note').textContent = !targetDeck
+      ? `Das neue Deck ist zunächst inaktiv. Schalte es unter Decks ein, sobald du den Stoff im Arbeitsbuch hattest.${sameName ? ` Ein Deck „${sameName.name}" gibt es schon – wähle es oben als Zieldeck, wenn die Karten dorthin sollen.` : ''}`
+      : S.isDeckActive(targetDeck)
+        ? `„${targetDeck.name}" ist aktiv – die neuen Karten kommen ab sofort dran, höchstens ${app.settings.newLimit} pro Tag.`
+        : `„${targetDeck.name}" ist inaktiv – die Karten warten, bis du das Deck unter Decks einschaltest.`;
+  }
+  imp.plans = plans;
+  const fresh = plans.flatMap((p) => p.plan.fresh);
+  const dupes = plans.reduce((n, p) => n + p.plan.duplicates.length, 0);
+  // Hinweis, keine Sperre: Karten, die es in einem anderen Deck schon gibt.
+  const otherCards = targetDeck ? allCards.filter((c) => c.deckId !== targetDeck.id) : allCards;
+  const elsewhere = findElsewhere(fresh, otherCards, deckNames);
 
-  $('imp-source').textContent = `${imp.fileName} · ${parsed.format === 'json' ? 'JSON' : `CSV, Trennzeichen ${SEPARATORS[imp.separator]}`}`;
+  $('imp-source').textContent = `${imp.fileName} · ${parsed.format === 'json' ? (parsed.multi ? `JSON, Sammeldatei mit ${plans.length} Decks` : 'JSON') : `CSV, Trennzeichen ${SEPARATORS[imp.separator]}`}`;
   $('imp-total').textContent = String(parsed.total);
-  $('imp-new').textContent = String(plan.fresh.length);
-  $('imp-dupes').textContent = String(plan.duplicates.length);
+  $('imp-new').textContent = String(fresh.length);
+  $('imp-dupes').textContent = String(dupes);
   $('imp-faulty').textContent = String(parsed.errors.length);
-  const sameName = !targetDeck && decks.find((d) => d.name.trim().toLowerCase() === (imp.newName || '').trim().toLowerCase());
-  $('imp-deck-note').textContent = !targetDeck
-    ? `Das neue Deck ist zunächst inaktiv. Schalte es unter Decks ein, sobald du den Stoff im Arbeitsbuch hattest.${sameName ? ` Ein Deck „${sameName.name}" gibt es schon – wähle es oben als Zieldeck, wenn die Karten dorthin sollen.` : ''}`
-    : S.isDeckActive(targetDeck)
-      ? `„${targetDeck.name}" ist aktiv – die neuen Karten kommen ab sofort dran, höchstens ${app.settings.newLimit} pro Tag.`
-      : `„${targetDeck.name}" ist inaktiv – die Karten warten, bis du das Deck unter Decks einschaltest.`;
+  $('imp-elsewhere').textContent = elsewhere.count === 0 ? '0' : `${elsewhere.count} (zuerst in „${elsewhere.firstDeckName}")`;
 
+  const rows = $('imp-decks');
+  rows.replaceChildren();
+  if (parsed.multi) {
+    const line = (p) => `${p.plan.fresh.length} neu · ${p.plan.duplicates.length} Dubletten · ${p.src.errors.length} fehlerhaft`;
+    for (const p of plans) rows.append(el('li', {}, [el('span', { class: 'label', text: p.src.deck.name }), el('span', { class: 'value', text: line(p) })]));
+    rows.append(el('li', { class: 'sum' }, [el('span', { class: 'label', text: `Gesamt, ${plans.length} Decks – alle zunächst inaktiv` }), el('span', { class: 'value', text: `${fresh.length} neu · ${dupes} Dubletten · ${parsed.errors.length} fehlerhaft` })]));
+  }
+  $('imp-decks-title').hidden = !parsed.multi;
+  rows.hidden = !parsed.multi;
+
+  const sampleCards = parsed.sources.flatMap((src) => src.cards);
   const ul = $('imp-sample');
   ul.replaceChildren();
-  for (const c of parsed.cards.slice(0, 10)) {
+  for (const c of sampleCards.slice(0, 10)) {
     ul.append(el('li', {}, [el('span', { class: 'front', text: cardPreviewText(c) }), el('span', { class: 'type', text: TYPE_LABELS[c.type] })]));
   }
-  if (!parsed.cards.length) ul.append(el('li', { class: 'muted', text: 'Keine gültige Karte in der Datei.' }));
-  $('imp-sample-title').textContent = parsed.cards.length > 10 ? 'Die ersten zehn Karten' : parsed.cards.length === 1 ? 'Die Karte' : `Alle ${parsed.cards.length} Karten`;
+  if (!sampleCards.length) ul.append(el('li', { class: 'muted', text: 'Keine gültige Karte in der Datei.' }));
+  $('imp-sample-title').textContent = sampleCards.length > 10 ? 'Die ersten zehn Karten' : sampleCards.length === 1 ? 'Die Karte' : `Alle ${sampleCards.length} Karten`;
 
   const errs = $('imp-errors');
   errs.replaceChildren();
@@ -864,37 +955,50 @@ async function renderImportPreview() {
   $('imp-errors-title').hidden = parsed.errors.length === 0;
   errs.hidden = parsed.errors.length === 0;
 
-  const n = plan.fresh.length;
+  const n = fresh.length;
   const btn = $('btn-imp-confirm');
-  btn.textContent = n === 0 ? 'Nichts zu importieren' : n === 1 ? '1 Karte importieren' : `${n} Karten importieren`;
+  const deckCount = plans.filter((p) => p.plan.fresh.length).length;
+  btn.textContent = n === 0 ? 'Nichts zu importieren' : parsed.multi ? `${n} Karten in ${deckCount} Deck${deckCount === 1 ? '' : 's'} importieren` : n === 1 ? '1 Karte importieren' : `${n} Karten importieren`;
   btn.disabled = n === 0 || !!imp.saving;
   $('imp-error').hidden = true;
   $('imp-preview').hidden = false;
 }
 
-/** Schritt 6: bestätigen. Eine einzige Transaktion – bricht etwas ab, ist der Bestand unverändert. */
+/** Schritt 6: bestätigen. Eine einzige Transaktion für alles – bricht etwas ab, ist der Bestand unverändert. */
 async function confirmImport() {
   const imp = app.imp;
-  if (!imp?.plan || imp.saving || !imp.plan.fresh.length) return;
-  let deck = null;
-  let deckId = imp.target;
-  if (deckId === '__new__') {
-    const name = $('imp-deck-name').value.trim();
-    if (!name) { toast('Bitte einen Namen für das neue Deck eingeben.'); $('imp-deck-name').focus(); return; }
-    const ts = new Date().toISOString();
-    // Frisch importierte Decks sind inaktiv, bis der Stoff im Arbeitsbuch dran war.
-    deck = { id: newId('d-'), name, createdAt: ts, updatedAt: ts, active: false, tags: imp.parsed.deck.tags || [] };
-    deckId = deck.id;
-  }
+  if (!imp?.plans || imp.saving || !imp.plans.some((p) => p.plan.fresh.length)) return;
   const now = new Date();
-  const cards = buildImportRecords(imp.plan.fresh, { deckId, now });
+  const ts = now.toISOString();
+  const newDecks = [];
+  const cards = [];
+  if (imp.parsed.multi) {
+    for (const { src, plan } of imp.plans) {
+      if (!plan.fresh.length) continue;
+      // Alle Decks aus einer Sammeldatei starten inaktiv.
+      const deck = { id: newId('d-'), name: src.deck.name, createdAt: ts, updatedAt: ts, active: false, tags: src.deck.tags || [] };
+      newDecks.push(deck);
+      cards.push(...buildImportRecords(plan.fresh, { deckId: deck.id, now: new Date(now.getTime() + cards.length) }));
+    }
+  } else {
+    let deckId = imp.target;
+    if (deckId === '__new__') {
+      const name = $('imp-deck-name').value.trim();
+      if (!name) { toast('Bitte einen Namen für das neue Deck eingeben.'); $('imp-deck-name').focus(); return; }
+      // Frisch importierte Decks sind inaktiv, bis der Stoff im Arbeitsbuch dran war.
+      const deck = { id: newId('d-'), name, createdAt: ts, updatedAt: ts, active: false, tags: imp.parsed.deck.tags || [] };
+      newDecks.push(deck);
+      deckId = deck.id;
+    }
+    cards.push(...buildImportRecords(imp.plans[0].plan.fresh, { deckId, now }));
+  }
   // Alle sofort fällig (Reihenfolge kommt aus createdAt) – nicht createdAt+i ms, sonst
   // wären die hinteren Karten für einen Augenblick „noch nicht fällig".
   const states = cards.map((c) => S.newState(c.id, now));
   imp.saving = true;
   $('btn-imp-confirm').disabled = true;
   try {
-    await app.db.importCards({ deck, cards, states });
+    await app.db.importCards({ decks: newDecks, cards, states });
   } catch (err) {
     imp.saving = false;
     $('btn-imp-confirm').disabled = false;
@@ -903,9 +1007,11 @@ async function confirmImport() {
     return;
   }
   const n = cards.length;
-  app.expandedDecks.add(deckId);
+  for (const d of newDecks) app.expandedDecks.add(d.id);
+  if (!newDecks.length) app.expandedDecks.add(imp.target);
   resetImport();
-  toast(deck ? `${n} Karte${n === 1 ? '' : 'n'} importiert – Deck „${deck.name}" ist noch inaktiv` : `${n} Karte${n === 1 ? '' : 'n'} importiert`, 3500);
+  const karten = `${n} Karte${n === 1 ? '' : 'n'}`;
+  toast(newDecks.length > 1 ? `${karten} in ${newDecks.length} Decks importiert – alle noch inaktiv` : newDecks.length === 1 ? `${karten} importiert – Deck „${newDecks[0].name}" ist noch inaktiv` : `${karten} importiert`, 3500);
   go('#decks');
 }
 

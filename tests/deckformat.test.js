@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import {
   DECK_SCHEMA, DeckFormatError, normalizeKey, cardKey, parseTags, validateCard, detectFormat, deckNameFromFile,
   parseDeckJson, parseDeckCsv, parseCsvRecords, parseDeck, expandCards, planImport, buildImportRecords,
-  cardPreviewText, deckToFile, deckFileName,
+  cardPreviewText, deckToFile, deckFileName, findElsewhere, deckGroup,
 } from '../app/deckformat.js';
 import { ROOT } from './helpers/repo.js';
 
@@ -290,4 +290,66 @@ test('Beispieldateien unter docs/beispiele/ sind importierbar bzw. scheitern wie
   const broken = detectFormat({ name: 'kaputt.json', bytes: new Uint8Array(example('kaputt.json')) });
   assert.equal(broken.format, 'json');
   assert.throws(() => parseDeck(broken.text, { format: 'json', fileName: 'kaputt.json' }), /kein gültiges JSON/);
+});
+
+test('Sammelform: decks-Liste → mehrere Quellen, Fehler nennen das Deck, Einzelform bleibt gültig', () => {
+  const multi = parseDeckJson(JSON.stringify({
+    schema: DECK_SCHEMA,
+    decks: [
+      { deck: { name: 'Módulo 2 · Dia 01', tags: ['m2'] }, cards: [{ front: 'a', back: 'b' }, { front: 'c' }] },
+      { cards: [{ type: 'cloze', text: 'x {{c1::y}}' }] },
+    ],
+  }), { fileName: 'modul2.json' });
+  assert.equal(multi.multi, true);
+  assert.equal(multi.sources.length, 2);
+  assert.equal(multi.sources[0].deck.name, 'Módulo 2 · Dia 01');
+  assert.deepEqual(multi.sources[0].deck.tags, ['m2']);
+  assert.equal(multi.sources[0].cards.length, 1);
+  assert.deepEqual(multi.sources[0].errors, ['Deck 1, Karte 2: Feld back fehlt']);
+  assert.equal(multi.sources[1].deck.name, 'modul2 2', 'ohne deck.name: Dateiname plus Nummer');
+  assert.equal(multi.total, 3);
+  assert.deepEqual(multi.errors, ['Deck 1, Karte 2: Feld back fehlt']);
+  // Einzelform hat dieselbe Struktur mit genau einer Quelle
+  const single = parseDeckJson(JSON.stringify({ schema: DECK_SCHEMA, deck: { name: 'X' }, cards: [{ front: 'a', back: 'b' }] }));
+  assert.equal(single.multi, false);
+  assert.equal(single.sources.length, 1);
+  assert.equal(single.sources[0].deck.name, 'X');
+  assert.deepEqual(single.sources[0].cards, single.cards);
+  const csv = parseDeckCsv('front;back\na;b\n', { fileName: 'x.csv' });
+  assert.equal(csv.multi, false);
+  assert.equal(csv.sources[0].cards.length, 1);
+  // Strukturfehler in der Sammelform
+  const throwsWith = (obj, re) => assert.throws(() => parseDeckJson(JSON.stringify(obj)), (e) => e instanceof DeckFormatError && re.test(e.message));
+  throwsWith({ schema: DECK_SCHEMA, decks: [] }, /Liste decks ist leer/);
+  throwsWith({ schema: DECK_SCHEMA, decks: 'x' }, /Feld decks muss eine Liste/);
+  throwsWith({ schema: DECK_SCHEMA, decks: [{ deck: { name: 'A' }, cards: [{ front: 'a', back: 'b' }] }], cards: [] }, /sowohl decks als auch cards/);
+  throwsWith({ schema: DECK_SCHEMA, decks: [{ deck: { name: 'A' } }] }, /Deck 1 \(„A"\): Feld cards fehlt/);
+  throwsWith({ schema: DECK_SCHEMA, decks: [{ deck: { name: 'A' }, cards: [] }] }, /Deck 1 \(„A"\): Die Liste cards ist leer/);
+  throwsWith({ schema: DECK_SCHEMA, decks: ['x'] }, /Deck 1: kein Objekt/);
+  throwsWith({ schema: DECK_SCHEMA, decks: [{ deck: { name: 5 }, cards: [{}] }] }, /Deck 1: Feld deck\.name muss Text sein/);
+});
+
+test('findElsewhere: Hinweis auf Karten in anderen Decks, mit dem ersten betroffenen Decknamen; deckGroup', () => {
+  const other = [{ deckId: 'd2', front: 'der Hund', back: 'o cachorro' }, { deckId: 'd3', front: 'die Katze', back: 'o gato' }, { deckId: 'd1', front: 'die Katze', back: 'o gato' }];
+  const names = new Map([['d1', 'Erstes'], ['d2', 'Zweites'], ['d3', 'Drittes']]);
+  const fresh = planImport([validateCard({ front: 'DIE Katze', back: 'o  gato' }).card, validateCard({ front: 'der Hund', back: 'o cachorro' }).card, validateCard({ front: 'neu', back: 'novo' }).card]).fresh;
+  assert.deepEqual(findElsewhere(fresh, other, names), { count: 2, firstDeckName: 'Drittes' });
+  assert.deepEqual(findElsewhere(fresh, [], names), { count: 0, firstDeckName: null });
+  assert.equal(findElsewhere(fresh, other).firstDeckName, 'd1', 'ohne Namen die Kennung – alphabetisch, unabhängig von der Reihenfolge');
+  assert.equal(deckGroup('Módulo 2 · Dia 01'), 'Módulo 2');
+  assert.equal(deckGroup('Probe (löschbar)'), null);
+  assert.equal(deckGroup('a·b'), null, 'nur mit Leerzeichen um den Mittelpunkt');
+  assert.equal(deckGroup(' · x'), null);
+});
+
+test('Beispiel-Sammeldatei: drei Decks einer Gruppe, alle Karten gültig', () => {
+  const name = 'beispiel-sammeldatei.json';
+  const det = detectFormat({ name, bytes: new Uint8Array(example(name)) });
+  const p = parseDeck(det.text, { format: det.format, fileName: name });
+  assert.equal(p.multi, true);
+  assert.deepEqual(p.sources.map((s) => s.deck.name), ['Beispiel-Modul · Dia 01', 'Beispiel-Modul · Dia 02', 'Beispiel-Modul · Dia 03']);
+  assert.deepEqual([...new Set(p.sources.map((s) => deckGroup(s.deck.name)))], ['Beispiel-Modul']);
+  assert.deepEqual(p.errors, []);
+  assert.equal(p.total, 10);
+  assert.deepEqual(p.sources.map((s) => planImport(s.cards).fresh.length), [5, 3, 3]);
 });

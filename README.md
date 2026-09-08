@@ -6,8 +6,10 @@ Internet und speichert allen Lernfortschritt nur auf dem Gerät.
 
 **Stand: Phase 2 – Import.** Kartenstapel als JSON oder CSV importieren, mit Vorschau
 und Dublettenprüfung; Tageslimit für neue Karten; Decks aktiv/inaktiv schalten; Karten
-pausieren; ein Deck als Datei exportieren; Erinnerung an die Sicherung. ZIP und XLSX
-warten auf eine Entscheidung (siehe `docs/phase-2.md`, Schritt 1). Der Pendel-Modus
+pausieren; ein Deck als Datei exportieren; Erinnerung an die Sicherung; mehrere Decks in
+einer Sammeldatei; Decks nach Namen gruppiert. ZIP, XLSX und PDF sind bewusst nicht
+eingebaut (Entscheidung zu `docs/phase-2.md`, Schritt 1: keine Bibliotheken, ZIP durch
+die Sammeldatei ersetzt). Der Pendel-Modus
 mit Sprachausgabe ist Phase 3. Der vollständige Auftrag steht in `AUFTRAG.md`, die
 Vorgaben der Phasen in `docs/phase-1.md` und `docs/phase-2.md`, das Dateiformat für
 Kartenstapel in `docs/deck-format.md`.
@@ -39,7 +41,13 @@ beendet die Session. Am Ende: Kartenzahl, Trefferquote, Dauer, „Sicherung jetz
 
 **Decks.** Jedes Deck mit Kartenzahl und Fälligkeit und einem **Schalter aktiv/inaktiv**.
 Ein inaktives Deck liefert keine Karten in die Session, behält aber seinen Lernzustand –
-so bleibt Stoff, den du im Arbeitsbuch noch nicht hattest, außen vor. Antippen klappt
+so bleibt Stoff, den du im Arbeitsbuch noch nicht hattest, außen vor. Beim Einschalten
+steht ein ruhiger Satz, wenn mehr neue Karten drin sind als das Tageslimit: „300 neue
+Karten, bei 10 pro Tag rund 30 Tage." Decks, deren Name ein „ · " enthält, stehen
+**gruppiert** unter dem Teil davor („Módulo 2 · Dia 01" unter „Módulo 2"), zusammenklappbar,
+mit Kartenzahl und Fälligkeit in der Kopfzeile und einem Schalter, der alle Decks der
+Gruppe auf einmal ein- oder ausschaltet. Decks ohne Trennzeichen stehen einzeln darüber.
+Antippen klappt
 die Karten auf; dort: „+ Karte", „Umbenennen", „Exportieren", „Löschen" (mit Rückfrage).
 Eine Karte antippen öffnet sie zum Bearbeiten; pausierte Karten sind durchgestrichen
 mit ⏸. Oben rechts: **Importieren**.
@@ -51,7 +59,11 @@ fehlerhaft, dazu die ersten zehn Karten im Klartext und jede fehlerhafte Zeile m
 („Zeile 14: Feld back fehlt"). Fehlerhafte Zeilen werden übersprungen, sie brechen den
 Import nicht ab. Zieldeck: neues Deck (Name aus der Datei vorbelegt) oder ein bestehendes.
 Dubletten – gleiche Vorder- und Rückseite im Zieldeck, ohne Rücksicht auf Leerzeichen,
-Groß-/Kleinschreibung und Akzente – werden übersprungen, nie überschrieben. Der
+Groß-/Kleinschreibung und Akzente – werden übersprungen, nie überschrieben. Dazu steht,
+wie viele der neuen Karten es schon in einem anderen Deck gibt (mit dessen Namen); die
+werden trotzdem importiert. Eine **Sammeldatei** mit mehreren Decks (`decks`-Liste, siehe
+`docs/deck-format.md`) zeigt je Deck eine Zeile und eine Gesamtsumme, eine Bestätigung,
+eine Transaktion; alle Decks daraus starten inaktiv. Der
 Schreibvorgang ist eine einzige Transaktion: bricht etwas ab, bleibt der Bestand wie er
 war. Ein neu angelegtes Deck ist zunächst **inaktiv**; importierst du in ein bestehendes
 aktives Deck, bleibt es aktiv.
@@ -155,7 +167,8 @@ Die Dateien liegen im Repository unter `docs/beispiele/` und werden von GitHub P
 mit ausgeliefert. Je Datei in **Safari auf dem iPhone**:
 
 8. Adresse öffnen, z. B. https://warumdu.github.io/estudar/docs/beispiele/beispiel-vokabeln.json
-   (ebenso `test-300-karten.json`, `kaputt.json`, `teils-fehlerhaft.csv`, `beispiel-vokabeln.csv`).
+   (ebenso `beispiel-sammeldatei.json`, `test-300-karten.json`, `kaputt.json`,
+   `teils-fehlerhaft.csv`, `beispiel-vokabeln.csv`).
 9. Safari fragt „Möchtest du … laden?" → **Laden**. Die Datei liegt danach in
    **Dateien → Downloads**. Zeigt Safari den Text stattdessen direkt an: Teilen-Symbol →
    **In Dateien sichern**.
@@ -201,8 +214,21 @@ mit ausgeliefert. Je Datei in **Safari auf dem iPhone**:
    Sicherung aus Phase 1 älter als sieben Tage, steht die Zeile schon da; „Jetzt sichern"
    → Teilen-Blatt → die Zeile verschwindet.
 
-Danach Aufräumen nach Belieben: Die Decks „Test · 300 Karten (löschbar)", „Kopie" und
-„teils-fehlerhaft" kannst du löschen.
+9. **Sammeldatei mit drei Decks.** Importieren → `beispiel-sammeldatei.json`. Die
+   Vorschau zeigt „Decks in der Datei" mit drei Zeilen (Dia 01: 5 neue, Dia 02: 3, Dia 03: 3)
+   und der Summe 11 neue Karten, kein Zieldeck zur Auswahl. Bestätigen → unter Decks steht
+   eine Gruppe „Beispiel-Modul" mit „3 Decks · 11 Karten · 0 fällig · inaktiv"; aufklappen
+   zeigt „Dia 01", „Dia 02", „Dia 03", alle inaktiv.
+10. **Gruppe per Schalter aktivieren.** Schalter in der Kopfzeile „Beispiel-Modul" → alle
+    drei Decks werden aktiv, die Kopfzeile zeigt „11 fällig". Wieder ausschalten → alle
+    drei inaktiv. Ein einzelnes Deck darin einschalten → Kopfzeile „1 von 3 aktiv".
+11. **Einzeldatei unverändert.** Importieren → `beispiel-vokabeln.json` noch einmal in ein
+    neues Deck „Einzel": Vorschau wie in Punkt 1, dazu die Zeile „Schon in einem anderen
+    Deck: 16 (zuerst in „Beispiel · Módulo 2 · Dia 03")" – die Karten werden trotzdem
+    importiert.
+
+Danach Aufräumen nach Belieben: Die Decks „Test · 300 Karten (löschbar)", „Kopie",
+„Einzel", „teils-fehlerhaft" und die Gruppe „Beispiel-Modul" kannst du löschen.
 
 Gib mir Bescheid, was klappt und was nicht. Bis dahin baue ich nicht weiter.
 
@@ -250,7 +276,7 @@ vendor/                Bibliotheken, aus npm kopiert und gepinnt
 scripts/               Hilfsskripte für die VM (vendor kopieren, Icons rendern)
 tests/                 Node- und Browser-Tests
 docs/deck-format.md    Das Dateiformat für Kartenstapel – für andere Chats gedacht
-docs/beispiele/        Importierbare Beispieldateien, die 300-Karten-Testdatei, zwei kaputte
+docs/beispiele/        Importierbare Beispieldateien, Sammeldatei, 300-Karten-Testdatei, zwei kaputte
 docs/phase-1.md        Vorgaben der Phase 1
 docs/phase-2.md        Vorgaben der Phase 2
 AUFTRAG.md             Der vollständige Auftrag
