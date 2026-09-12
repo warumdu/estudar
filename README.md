@@ -4,15 +4,15 @@ Meine Vokabelapp, um brasilianisches Portugiesisch offline mit Karteikarten zu l
 Eine installierbare Web-App (PWA): Sie liegt als Icon auf dem iPhone, läuft ohne
 Internet und speichert allen Lernfortschritt nur auf dem Gerät.
 
-**Stand: Phase 2 – Import.** Kartenstapel als JSON oder CSV importieren, mit Vorschau
-und Dublettenprüfung; Tageslimit für neue Karten; Decks aktiv/inaktiv schalten; Karten
-pausieren; ein Deck als Datei exportieren; Erinnerung an die Sicherung; mehrere Decks in
-einer Sammeldatei; Decks nach Namen gruppiert. ZIP, XLSX und PDF sind bewusst nicht
-eingebaut (Entscheidung zu `docs/phase-2.md`, Schritt 1: keine Bibliotheken, ZIP durch
-die Sammeldatei ersetzt). Der Pendel-Modus
-mit Sprachausgabe ist Phase 3. Der vollständige Auftrag steht in `AUFTRAG.md`, die
-Vorgaben der Phasen in `docs/phase-1.md` und `docs/phase-2.md`, das Dateiformat für
-Kartenstapel in `docs/deck-format.md`.
+**Stand: Phase 3, Teil A – Diagnose für den Fahrmodus (0.2.2).** Bevor der Fahrmodus
+gebaut wird, misst eine Prüfseite auf dem iPhone, was das Gerät kann: welche Stimmen es
+gibt (pt-BR, de-DE), ob die Sprachausgabe im Auto über CarPlay läuft, ob das Wake Lock
+den Bildschirm anlässt und ob die Ausgabe im Dauerbetrieb durchhält. Der Fahrmodus selbst
+(Teil B) kommt erst nach diesem Messergebnis. Alles aus den Phasen 1 und 2 bleibt: Lernen
+mit FSRS, Decks, Import mit Vorschau, Sicherung. ZIP, XLSX und PDF sind bewusst nicht
+eingebaut (Entscheidung zu `docs/phase-2.md`, Schritt 1). Der vollständige Auftrag steht
+in `AUFTRAG.md`, die Vorgaben der Phasen in `docs/phase-1.md`, `docs/phase-2.md` und
+`docs/phase-3.md`, das Dateiformat für Kartenstapel in `docs/deck-format.md`.
 
 Adresse der App: **https://warumdu.github.io/estudar/**
 
@@ -100,6 +100,40 @@ zählen nicht gegen das Limit. **Neue Karten** haben ein eigenes Limit (Standard
 Tag) und kommen in Eingabe- bzw. Importreihenfolge, nie zufällig: Ein Import von
 300 Karten zeigt am ersten Tag nur 10 davon.
 
+## Diagnose für den Fahrmodus (Phase 3, Teil A)
+
+Der Fahrmodus soll Karten vorlesen, während das iPhone auf der Ladeschale liegt und der
+Ton über CarPlay läuft. Ob das geht, entscheidet das Gerät, nicht der Code – deshalb
+gibt es zuerst eine Prüfseite: **Einstellungen → „Diagnose für den Fahrmodus"** (oder
+direkt https://warumdu.github.io/estudar/diagnose.html in Safari). Sie ändert nichts an
+den Karten und zeigt, nummeriert wie in `docs/phase-3.md`:
+
+1. **Stimmen** – alle Stimmen des Geräts mit Name, Sprachkennung, lokal/aus dem Netz
+   und Qualitätsstufe (compact/enhanced/premium); pt-BR und de-DE hervorgehoben, die
+   Stimme, die die App wählen würde, mit ★. ▶ spricht eine Hörprobe. Fehlt pt-BR,
+   steht dort, wie du die Stimme in den iOS-Einstellungen nachlädst.
+2. **Testsätze** – ein portugiesischer Satz mit der besten pt-BR-Stimme, ein deutscher
+   mit der besten de-DE-Stimme, Sprechtempo 0,8 / 0,9 / 1,0.
+3. **Wake Lock** – anfordern; die Seite sagt, ob es geklappt hat und ob die Sperre nach
+   einem Wechsel in eine andere App und zurück noch steht.
+4. **Zustand (live)** – Sprachausgabe (spricht / pausiert / wartet / beendet), sichtbare
+   Höhe, Wake Lock, stilles Audio, Audiositzung.
+5. **Dauertest** – zehn Sätze im Abstand von fünf Sekunden (oder sechzig, fünf Minuten),
+   abwechselnd Deutsch und Portugiesisch, jeder mit seiner Nummer.
+6. **Falls der Ton nicht über CarPlay kommt** – zwei Schalter zum Ausprobieren: ein
+   stilles Audioelement in Schleife (hält die Audiositzung offen) und, wo iOS es anbietet,
+   die Audiositzung auf „playback".
+
+Alles landet mit Zeitstempel im **Protokoll** unten auf der Seite. Es bleibt auf dem
+Gerät gespeichert, auch wenn die Seite neu lädt; „Teilen" schickt es als Text (z. B. in
+Notizen), „Kopieren" legt es in die Zwischenablage.
+
+Was dahinter steckt: Jede Äußerung wartet auf das end-Ereignis der Sprachausgabe.
+Bleibt es aus, geht es nach einer Frist trotzdem weiter (Watchdog, im Protokoll
+sichtbar). Der Dauertest rechnet mit Zeitstempeln, nicht mit aufaddierten Pausen, und
+zeigt je Satz die Abweichung vom Plan. Beides sind die Bausteine, die der Fahrmodus in
+Teil B braucht.
+
 ## Wichtig zu wissen: iOS kann die Daten einer Web-App löschen
 
 Eine Web-App speichert ihre Daten nur auf dem iPhone, im Speicherbereich der App
@@ -140,16 +174,13 @@ hier im Original.
 
 ### A. Den Arbeitsstand in `main` übernehmen
 
-1. Öffne https://github.com/warumdu/estudar in Safari.
-2. Oben erscheint ein gelber Kasten „**claude/phase-2-import-obkclr** had recent pushes"
-   mit dem Knopf **Compare & pull request**. Tippe darauf.
-   Fehlt der Kasten: Reiter **Pull requests** → **New pull request** → bei
-   „compare:" den Zweig `claude/phase-2-import-obkclr` wählen (bei „base:" bleibt `main`).
-3. Tippe **Create pull request** (Titel kann bleiben). Erscheint danach ein
-   Formular, dort noch einmal **Create pull request**.
-4. Tippe **Merge pull request**, dann **Confirm merge**. Der Stand ist jetzt in `main`.
-5. GitHub Pages baut die Seite in wenigen Minuten neu (Reiter **Actions** zeigt
+1. Der Pull Request ist schon angelegt: https://github.com/warumdu/estudar/pull/5
+   in Safari öffnen.
+2. Nach unten scrollen, **Merge pull request** antippen, dann **Confirm merge**.
+   Der Stand ist jetzt in `main`.
+3. GitHub Pages baut die Seite in wenigen Minuten neu (Reiter **Actions** zeigt
    „pages build and deployment"; grüner Haken = fertig).
+4. und 5. entfallen.
 
 ### B. Die neue Fassung aufs iPhone holen
 
@@ -157,10 +188,9 @@ hier im Original.
    „Neue Fassung verfügbar – **Aktualisieren**". Tippe darauf; die App lädt einmal neu.
    Erscheint der Hinweis nicht: Einstellungen → **Nach neuer Fassung suchen**, oder
    die App schließen (nach oben wischen) und neu vom Icon starten.
-7. In den Einstellungen muss bei **Version 0.2.1** stehen und bei **Offline: bereit ✓**.
-   Erst dann ist die neue Fassung vollständig im Gerät und läuft auch im Flugmodus.
-   Dein Bestand aus Phase 1 bleibt dabei erhalten; die neue Einstellung „neue Karten
-   pro Tag" steht auf 10.
+7. In den Einstellungen muss bei **Version 0.2.2** stehen und bei **Offline: bereit ✓**.
+   Darunter steht jetzt der Knopf **Diagnose für den Fahrmodus**. Dein Bestand bleibt
+   unverändert.
 
 ### C. Die Beispieldateien auf das iPhone holen
 
@@ -174,77 +204,50 @@ mit ausgeliefert. Je Datei in **Safari auf dem iPhone**:
    **Dateien → Downloads**. Zeigt Safari den Text stattdessen direkt an: Teilen-Symbol →
    **In Dateien sichern**.
 
-### D. Prüfliste Phase 2 (auf dem iPhone, in der App vom Icon)
+### D. Diagnose für den Fahrmodus – die Messung (Phase 3, Teil A)
 
-1. **Import einer JSON-Datei mit Vorschau.** Decks → Importieren → Datei wählen →
-   `beispiel-vokabeln.json`. Die Vorschau zeigt 14 Einträge, 16 neue Karten (zwei sind
-   in beide Richtungen), 0 Dubletten, 0 fehlerhaft, die ersten zehn Karten im Klartext,
-   Zieldeck „Neues Deck" mit dem Namen „Beispiel · Módulo 2 · Dia 03". Tippe
-   **16 Karten importieren**. Unter Decks steht das Deck mit „16 Karten · inaktiv" und
-   ausgeschaltetem Schalter. „Heute" hat sich nicht verändert.
-2. **Dieselbe Datei ein zweites Mal.** Importieren → dieselbe Datei → bei Zieldeck
-   „Beispiel · Módulo 2 · Dia 03" wählen: 0 neue, 16 Dubletten, der Knopf sagt
-   „Nichts zu importieren". Abbrechen.
-3. **Absichtlich kaputte Datei.** Importieren → `kaputt.json`: rote Meldung „kein gültiges
-   JSON – vermutlich abgeschnitten", keine Vorschau, nichts wurde geschrieben (Decks
-   unverändert). Dann `teils-fehlerhaft.csv`: Vorschau mit 6 Einträgen, 2 neue,
-   4 fehlerhaft, jede Fehlerzeile mit Grund („Zeile 3: Feld back fehlt" …). Import legt
-   ein Deck „teils-fehlerhaft" mit 2 Karten an.
-4. **300 Karten.** Importieren → `test-300-karten.json` → 300 neue → importieren. Decks →
-   Schalter bei „Test · 300 Karten (löschbar)" einschalten; alle anderen Decks für diesen
-   Test ausschalten (sonst kommen deren neue Karten zuerst, weil sie älter sind). Heute
-   zeigt bei „Neue Karten" **10 von 300**. Lernen: die erste Karte ist „der Montag", dann
-   „der Dienstag" – Dateireihenfolge, nicht Zufall. Einstellungen → „Neue Karten pro Tag"
-   auf 25: Heute zeigt 25 (minus die heute schon bewerteten). Wieder auf 10 stellen,
-   die anderen Decks wieder einschalten.
-5. **Inaktives Deck.** Decks → Schalter bei „Test · 300 Karten" ausschalten → Heute zeigt
-   die Karten dieses Decks nicht mehr (bei sonst leerem Bestand: „Nichts fällig", ohne
-   „Trotzdem üben"). Einschalten → sie sind wieder da, der Fortschritt der schon
-   bewerteten Karten ist erhalten.
-6. **Deckexport und Reimport.** Decks → „Beispiel · Módulo 2 · Dia 03" antippen →
-   **Exportieren** → im Teilen-Blatt „In Dateien sichern" (Datei
-   `deck-beispiel-modulo-2-dia-03.json`). Dann Importieren → diese Datei wählen: 14
-   Einträge, 16 neue gegen ein neues Deck; wählst du als Zieldeck das Beispiel-Deck, sind
-   es 16 Dubletten. Importiere in ein neues Deck „Kopie" – 16 Karten, inaktiv.
-7. **Karte pausieren.** Decks → ein Deck aufklappen → Karte antippen → „Karte pausiert"
-   ankreuzen → Speichern. In der Liste ist sie durchgestrichen mit ⏸, in der Session
-   kommt sie nicht. Haken entfernen → sie ist wieder dabei.
-8. **Erinnerung an die Sicherung.** Sie erscheint auf „Heute" als ruhige Zeile mit „Jetzt
-   sichern", sobald die letzte Sicherung mehr als sieben Tage zurückliegt (oder es noch
-   nie eine gab und schon Bewertungen vorliegen). Zum Prüfen jetzt: Ist deine letzte
-   Sicherung aus Phase 1 älter als sieben Tage, steht die Zeile schon da; „Jetzt sichern"
-   → Teilen-Blatt → die Zeile verschwindet.
+Die entscheidende Frage: **Kommt der Ton aus den Autolautsprechern oder aus dem
+Telefon?** Alles andere ist Beiwerk. Mach die Messung in der App vom Icon (Einstellungen →
+„Diagnose für den Fahrmodus"), nicht in Safari – dort läuft später der Fahrmodus.
 
-9. **Sammeldatei mit drei Decks.** Importieren → `beispiel-sammeldatei.json`. Die
-   Vorschau zeigt „Decks in der Datei" mit drei Zeilen (Dia 01: 5 neue, Dia 02: 3, Dia 03: 3)
-   und der Summe 11 neue Karten, kein Zieldeck zur Auswahl. Bestätigen → unter Decks steht
-   eine Gruppe „Beispiel-Modul" mit „3 Decks · 11 Karten · 0 fällig · inaktiv"; aufklappen
-   zeigt „Dia 01", „Dia 02", „Dia 03", alle inaktiv.
-10. **Gruppe per Schalter aktivieren.** Schalter in der Kopfzeile „Beispiel-Modul" → alle
-    drei Decks werden aktiv, die Kopfzeile zeigt „11 fällig". Wieder ausschalten → alle
-    drei inaktiv. Ein einzelnes Deck darin einschalten → Kopfzeile „1 von 3 aktiv".
-11. **Einzeldatei unverändert.** Importieren → `beispiel-vokabeln.json` noch einmal in ein
-    neues Deck „Einzel": Vorschau wie in Punkt 1, dazu die Zeile „Schon in einem anderen
-    Deck: 16 (zuerst in „Beispiel · Módulo 2 · Dia 03")" – die Karten werden trotzdem
-    importiert.
+**Zu Hause, fünf Minuten:**
 
-Danach Aufräumen nach Belieben: Die Decks „Test · 300 Karten (löschbar)", „Kopie",
-„Einzel", „teils-fehlerhaft" und die Gruppe „Beispiel-Modul" kannst du löschen.
+1. Diagnose öffnen. Oben muss „Gestartet: als App vom Home-Bildschirm ✓" stehen.
+2. Unter **1 · Stimmen**: Steht bei „Beste pt-BR" und „Beste de-DE" je eine Stimme
+   (z. B. Luciana und Anna)? Erscheint stattdessen der Kasten „Keine pt-BR-Stimme
+   gefunden", lade sie nach, wie dort beschrieben, und öffne die Seite neu.
+3. **Portugiesisch sprechen** und **Deutsch sprechen** antippen. Unter „2 · Testsätze"
+   muss danach „Ende nach … (end-Ereignis)" stehen. Gefällt dir eine andere Stimme aus
+   der Liste besser (▶ Hörprobe), merk dir den Namen.
+4. **Wake Lock anfordern** → „aktiv seit …". Dann zum Home-Bildschirm, eine andere App
+   öffnen, zurück in estudar. Im Protokoll steht jetzt „Seite wieder sichtbar – Wake Lock
+   steht noch" oder „steht NICHT mehr". Beides ist ein gültiges Ergebnis; ich brauche
+   nur den Satz.
 
-Gib mir Bescheid, was klappt und was nicht. Bis dahin baue ich nicht weiter.
+**Im stehenden Auto, Motor an, CarPlay verbunden, iPhone auf der Ladeschale, Bildschirm an:**
 
-### E. Prüfliste 0.2.1 (Session auf einem Bildschirm, Sicherung ohne text.txt)
+5. **Portugiesisch sprechen.** Kommt der Ton aus dem Auto oder aus dem Telefon? Kommt
+   gar nichts: Radio auf die CarPlay-Quelle stellen und den Stummschalter am iPhone
+   prüfen, dann noch einmal.
+6. **10 Sätze (50 s)** starten und nur zuhören: Hörst du alle zehn, gleichmäßig, aus
+   dem Auto? Danach steht unter „5 · Dauertest" die Zeile „Dauertest fertig: 10 von 10
+   gesprochen · end-Ereignisse 10 · Watchdog 0 …" – oder eben andere Zahlen.
+7. **Unterbrechung.** Dauertest noch einmal starten und mittendrin Siri über das Lenkrad
+   aufrufen (oder dich kurz anrufen lassen). Läuft der Test danach weiter, bleibt er
+   stehen, oder zeigt „4 · Zustand" dauerhaft „pausiert"?
+8. **Nur wenn in Schritt 5 der Ton aus dem Telefon kam:** unter „6 · Falls der Ton
+   nicht über CarPlay kommt" den Schalter **Stilles Audio in Schleife** einschalten und
+   Schritt 5 und 6 wiederholen. Gibt es auch den Schalter **Audiositzung auf „playback"**,
+   probiere ihn ebenfalls – einzeln und zusammen mit dem stillen Audio.
 
-1. **Session ohne Scrollen.** Heute → Lernen. Zähler oben, Frage in der Mitte, unten
-   frei bleibende Fläche. Antippen: die Lösung erscheint unter der Frage, die vier
-   Knöpfe stehen am unteren Rand oberhalb der Home-Anzeige, ohne dass die Seite
-   scrollt oder etwas springt. Das gilt für Karten mit und ohne Beispielsatz und für
-   eine lange Lösung. Bei jeder weiteren Karte stehen die Knöpfe an derselben Stelle.
-2. **Sehr langer Inhalt.** Nur wenn eine Karte wirklich nicht passt, lässt sich der
-   mittlere Bereich mit dem Finger schieben; Kopfzeile und Knöpfe bleiben stehen.
-3. **Sicherung ist eine Datei.** Einstellungen → Sicherung exportieren → im
-   Teilen-Blatt liegt nur `estudar-sicherung-….json`, keine `text.txt` mehr.
-   „In Dateien sichern" und danach Sicherung importieren funktionieren wie bisher.
+**Ergebnis schicken:**
+
+9. Unten **Protokoll → Teilen** (z. B. in Notizen oder als Nachricht an dich selbst)
+   und den Text in den Chat kopieren. Dazu in eigenen Worten: Auto oder Telefon; alle
+   zehn Sätze gehört; Wake Lock nach dem Wechsel steht noch / nicht mehr; was die
+   Unterbrechung gemacht hat; falls ausprobiert, ob das stille Audio geholfen hat.
+
+Bis dahin baue ich Teil B nicht.
 
 ## Technik in Kürze
 
@@ -264,17 +267,26 @@ Gib mir Bescheid, was klappt und was nicht. Bis dahin baue ich nicht weiter.
   CSV-Leser, Dublettenerkennung und Export in `app/deckformat.js`. Importe schreiben
   mit `add()` in einer Transaktion: ein Schlüssel, den es schon gibt, lässt den ganzen
   Import scheitern statt etwas zu überschreiben.
+- **Sprachausgabe.** Web Speech API des Browsers (`speechSynthesis`), keine Bibliothek,
+  keine Audiodateien. `app/speech.js` bewertet Stimmen (genaue Region, lokal, Qualität,
+  Spaßstimmen zuletzt), spricht mit Promise auf das end-Ereignis plus Watchdog und plant
+  Folgen aus Zeitstempeln. Die Diagnoseseite (`diagnose.html`, `app/diagnose.js`) nutzt
+  das und liegt mit im Offline-Cache.
 - **Tests** laufen nur in der Entwicklungs-VM mit Node (`npm test`): Scheduler,
-  Antwortvergleich, Kartenmodell, Sicherung, Deckformat samt Beispieldateien (Node), dazu
-  die Bedienabläufe der Abnahmelisten aus Phase 1 und 2, ein Offline-Test und der
-  Update-Ablauf im Chromium, sowie Manifest, Service Worker, Vendor-Prüfsummen und der
-  CDN-Wächter. Die App selbst braucht kein Node.
+  Antwortvergleich, Kartenmodell, Sicherung, Deckformat samt Beispieldateien und
+  Sprachausgabe mit nachgestellter Uhr (Node), dazu die Bedienabläufe der Abnahmelisten
+  aus Phase 1 und 2, die Diagnoseseite mit nachgestellter Sprachausgabe, ein Offline-Test
+  und der Update-Ablauf im Chromium, sowie Manifest, Service Worker, Vendor-Prüfsummen
+  und der CDN-Wächter. Die App selbst braucht kein Node.
 
 ## Dateien
 
 ```
 index.html             Die Bildschirme (Heute, Session, Decks, Importieren, Karte, Einstellungen)
+diagnose.html          Prüfseite für den Fahrmodus (Phase 3, Teil A)
 app/main.js            Oberfläche, Session, Import, Export, Sicherung, Update-Hinweis
+app/diagnose.js        Ablauf der Prüfseite: Stimmen, Testsätze, Wake Lock, Dauertest, Protokoll
+app/speech.js          Sprachausgabe: Stimmen bewerten, sprechen mit end-Ereignis und Watchdog, Zeitplan
 app/db.js              IndexedDB, Schema und Migration
 app/scheduler.js       Anbindung an ts-fsrs, Klartext-Intervalle, Tagesliste, beide Tageslimits
 app/cards.js           Kartenmodell, Lückentext
@@ -293,5 +305,6 @@ docs/deck-format.md    Das Dateiformat für Kartenstapel – für andere Chats g
 docs/beispiele/        Importierbare Beispieldateien, Sammeldatei, 300-Karten-Testdatei, zwei kaputte
 docs/phase-1.md        Vorgaben der Phase 1
 docs/phase-2.md        Vorgaben der Phase 2
+docs/phase-3.md        Vorgaben der Phase 3 (Fahrmodus)
 AUFTRAG.md             Der vollständige Auftrag
 ```

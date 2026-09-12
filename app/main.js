@@ -9,7 +9,7 @@ import { buildBackup, backupFileName, backupReminder, parseBackup, previewImport
 import { DeckFormatError, SEPARATORS, detectFormat, parseDeck, planImport, findElsewhere, buildImportRecords, cardPreviewText, deckToFile, deckFileName, deckGroup } from './deckformat.js';
 import { probeDeck } from './seed.js';
 
-export const APP_VERSION = '0.2.1';
+export const APP_VERSION = '0.2.2';
 
 const $ = (id) => document.getElementById(id);
 const SCREENS = ['heute', 'session', 'decks', 'importieren', 'karte', 'einstellungen'];

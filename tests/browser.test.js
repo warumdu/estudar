@@ -56,7 +56,7 @@ test('App-Hülle liegt vollständig im Cache', async () => {
     const cache = await caches.open(names.find((n) => n.startsWith('estudar-v')));
     return (await cache.keys()).map((r) => new URL(r.url).pathname).sort();
   });
-  for (const p of ['/estudar/', '/estudar/index.html', '/estudar/manifest.webmanifest', '/estudar/app/main.js', '/estudar/app/style.css', '/estudar/vendor/ts-fsrs/index.js', '/estudar/icons/icon-180.png', '/estudar/icons/icon-192.png', '/estudar/icons/icon-512.png', '/estudar/icons/icon-512-maskable.png', '/estudar/icons/favicon-32.png']) {
+  for (const p of ['/estudar/', '/estudar/index.html', '/estudar/manifest.webmanifest', '/estudar/app/main.js', '/estudar/app/style.css', '/estudar/vendor/ts-fsrs/index.js', '/estudar/diagnose.html', '/estudar/app/diagnose.js', '/estudar/app/speech.js', '/estudar/icons/icon-180.png', '/estudar/icons/icon-192.png', '/estudar/icons/icon-512.png', '/estudar/icons/icon-512-maskable.png', '/estudar/icons/favicon-32.png']) {
     assert.ok(cached.includes(p), `${p} fehlt im Cache: ${cached.join(', ')}`);
   }
   const withQuery = await page.evaluate(async () => {

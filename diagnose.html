@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>estudar – Diagnose</title>
+  <meta name="description" content="Prüfseite für den Fahrmodus: Stimmen, Sprachausgabe, Wake Lock, Dauertest.">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0d1210">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="stylesheet" href="app/style.css">
+  <style>
+    /* Nur diese Seite: keine Reiter, deshalb eigener unterer Abstand. */
+    main.diag { max-width: 34rem; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 0.5rem) max(1rem, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 2rem) max(1rem, env(safe-area-inset-left)); }
+    .diag h2 { margin-top: 1.8rem; }
+    .diag .rows .value.small-value { font-size: 0.9rem; font-weight: 500; overflow-wrap: anywhere; }
+    .diag .btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.7rem; }
+    .diag .btn-row .btn { flex: 1 1 10rem; margin-top: 0; }
+    .voice-list { list-style: none; margin: 0.6rem 0 0; padding: 0; background: var(--surface); border-radius: 1rem; }
+    .voice-list li { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0.8rem 0.55rem 1rem; border-top: 1px solid rgba(255,255,255,0.06); }
+    .voice-list li:first-child { border-top: 0; }
+    .voice-list .v-name { flex: 1; min-width: 0; }
+    .voice-list .v-name b { display: block; overflow-wrap: anywhere; }
+    .voice-list .v-name span { color: var(--muted); font-size: 0.85rem; }
+    .voice-list li.hl { background: rgba(123, 211, 164, 0.10); }
+    .voice-list li.hl .v-name b { color: var(--accent); }
+    .voice-list li.best .v-name b::after { content: " ★"; }
+    .voice-list .play { appearance: none; border: 0; border-radius: 50%; width: 2.6rem; height: 2.6rem; flex: 0 0 auto; background: var(--surface-2); color: var(--text); font-size: 1.1rem; cursor: pointer; }
+    .status-line { margin-top: 0.6rem; font-weight: 600; min-height: 1.4rem; overflow-wrap: anywhere; }
+    .hint-box { background: var(--surface); border-radius: 1rem; padding: 0.9rem 1.1rem; margin-top: 0.8rem; font-size: 0.95rem; }
+    .log { background: var(--surface); border-radius: 1rem; padding: 0.8rem 0.9rem; margin: 0.7rem 0 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch; color: var(--text); }
+    .rate-seg { grid-template-columns: repeat(3, 1fr); }
+    .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.8rem 1.1rem; background: var(--surface); border-radius: 1rem; margin-top: 0.6rem; }
+    .switch-row .text { flex: 1; }
+    .switch-row .text small { display: block; color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <main class="diag">
+    <header class="top">
+      <h1>Diagnose</h1>
+      <a href="./" class="btn small">Zurück zur App</a>
+    </header>
+    <p class="muted small">Prüfseite für den Fahrmodus (Phase 3, Teil A). Sie misst, was dieses iPhone kann, und ändert nichts an deinen Karten. Fassung <span id="diag-version">0.2.2</span>.</p>
+
+    <ul class="rows">
+      <li><span class="label">Gestartet</span><span class="value" id="st-mode">…</span></li>
+      <li><span class="label">System</span><span class="value small-value" id="st-system">…</span></li>
+    </ul>
+    <p class="muted small">Öffne diese Seite auch aus der App (Einstellungen → „Diagnose für den Fahrmodus"): dort steht dann „als App vom Home-Bildschirm", und dort läuft später der Fahrmodus.</p>
+
+    <h2>1 · Stimmen</h2>
+    <p class="status-line" id="voices-summary">Stimmen werden gesucht …</p>
+    <ul class="rows">
+      <li><span class="label">Beste pt-BR</span><span class="value small-value" id="voices-best-pt">–</span></li>
+      <li><span class="label">Beste de-DE</span><span class="value small-value" id="voices-best-de">–</span></li>
+    </ul>
+    <div class="hint-box" id="voices-hint-pt" hidden>
+      <strong>Keine pt-BR-Stimme gefunden.</strong> Nachladen: iOS-Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen → Portugiesisch → Brasilien → eine Stimme (z. B. „Luciana") laden. Danach diese Seite neu öffnen.
+    </div>
+    <ul class="voice-list" id="voices-list"></ul>
+    <p class="muted small">▶ spricht eine Hörprobe mit genau dieser Stimme. ★ ist die Stimme, die die App wählen würde.</p>
+
+    <h2>2 · Testsätze</h2>
+    <div class="field">
+      <span>Sprechtempo</span>
+      <div class="seg rate-seg" id="rate-seg">
+        <label><input type="radio" name="rate" value="0.8"><span>0,8 langsam</span></label>
+        <label><input type="radio" name="rate" value="0.9" checked><span>0,9 Standard</span></label>
+        <label><input type="radio" name="rate" value="1"><span>1,0 normal</span></label>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button type="button" id="btn-test-pt" class="btn primary">Portugiesisch sprechen</button>
+      <button type="button" id="btn-test-de" class="btn primary">Deutsch sprechen</button>
+      <button type="button" id="btn-stop" class="btn">Stopp</button>
+    </div>
+    <p class="status-line" id="test-status"></p>
+
+    <h2>3 · Wake Lock</h2>
+    <button type="button" id="btn-wakelock" class="btn primary wide">Wake Lock anfordern</button>
+    <label class="check"><input type="checkbox" id="wl-auto"><span>nach Rückkehr in die Seite automatisch erneut anfordern (so wird es der Fahrmodus tun)</span></label>
+    <p class="status-line" id="wl-status">nicht angefordert</p>
+    <p class="muted small">Prüfung: anfordern, dann in eine andere App wechseln und zurückkommen. Die Zeile oben und das Protokoll sagen, ob die Sperre noch steht.</p>
+
+    <h2>4 · Zustand (live)</h2>
+    <ul class="rows">
+      <li><span class="label">Sprachausgabe</span><span class="value" id="st-speech">…</span></li>
+      <li><span class="label">Sichtbare Höhe</span><span class="value small-value" id="st-height">…</span></li>
+      <li><span class="label">Wake Lock</span><span class="value small-value" id="st-wakelock">nicht angefordert</span></li>
+      <li><span class="label">Stilles Audio</span><span class="value small-value" id="st-audio">aus</span></li>
+      <li><span class="label">Audiositzung</span><span class="value small-value" id="st-session">…</span></li>
+    </ul>
+    <p class="muted small">Wird viermal pro Sekunde aufgefrischt. Änderungen der sichtbaren Höhe und Wechsel nach „pausiert" landen im Protokoll.</p>
+
+    <h2>5 · Dauertest</h2>
+    <p class="muted small">Sätze im Abstand von fünf Sekunden, abwechselnd Deutsch und Portugiesisch, jeder mit seiner Nummer. Die Zeitpunkte kommen aus Zeitstempeln, nicht aus aufaddierten Pausen.</p>
+    <div class="btn-row">
+      <button type="button" id="btn-endurance" class="btn primary">10 Sätze (50 s)</button>
+      <button type="button" id="btn-endurance-long" class="btn">60 Sätze (5 min)</button>
+      <button type="button" id="btn-endurance-stop" class="btn">Stopp</button>
+    </div>
+    <p class="status-line" id="endurance-status"></p>
+
+    <h2>6 · Falls der Ton nicht über CarPlay kommt</h2>
+    <label class="switch-row">
+      <span class="text">Stilles Audio in Schleife<small>Ein Audioelement spielt Stille, um die Audiositzung offen zu halten. Danach Testsätze und Dauertest wiederholen.</small></span>
+      <span class="switch"><input type="checkbox" id="sw-silent"><span></span></span>
+    </label>
+    <label class="switch-row" id="row-session" hidden>
+      <span class="text">Audiositzung auf „playback"<small>navigator.audioSession: Ton wie Musikwiedergabe behandeln. Ebenfalls danach die Tests wiederholen.</small></span>
+      <span class="switch"><input type="checkbox" id="sw-session"><span></span></span>
+    </label>
+    <p class="muted small" id="session-note"></p>
+
+    <h2>Protokoll</h2>
+    <div class="btn-row">
+      <button type="button" id="btn-log-copy" class="btn">Kopieren</button>
+      <button type="button" id="btn-log-share" class="btn">Teilen</button>
+      <button type="button" id="btn-log-clear" class="btn">Leeren</button>
+    </div>
+    <p class="muted small">Das Protokoll bleibt auf diesem Gerät gespeichert, auch wenn die Seite neu lädt. „Teilen" schickt es als Text, z. B. in Notizen oder eine Nachricht.</p>
+    <pre class="log" id="log"></pre>
+  </main>
+  <div id="toast" class="toast" hidden></div>
+  <noscript><p class="error">JavaScript ist abgeschaltet – so kann die Seite nicht laufen.</p></noscript>
+  <script type="module" src="app/diagnose.js"></script>
+</body>
+</html>
