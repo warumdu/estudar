@@ -46,6 +46,7 @@ h2 { font-size: 1.05rem; color: var(--muted); margin: 1.6rem 0 0.5rem; text-tran
   appearance: none; border: 0; border-radius: 0.9rem; cursor: pointer;
   background: var(--surface-2); color: var(--text); font: inherit; font-weight: 600;
   min-height: 3.2rem; padding: 0.7rem 1.1rem; display: inline-flex; align-items: center; justify-content: center;
+  text-decoration: none; /* auch als Link (<a class="btn">) ohne Unterstreichung */
 }
 .btn.primary { background: var(--accent); color: var(--accent-ink); }
 .btn.danger { background: transparent; color: var(--bad); border: 1px solid rgba(240, 140, 125, 0.4); }

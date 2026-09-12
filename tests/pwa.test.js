@@ -52,12 +52,14 @@ test('index.html: iOS-Installations-Tags und Manifest-Verweis', () => {
   assert.doesNotMatch(html, /(?:href|src)=["']\//, 'absolute Pfade brechen unter /estudar/');
 });
 
-test('Version ist in package.json, sw.js, index.html und app/main.js identisch', () => {
+test('Version ist in package.json, sw.js, index.html, diagnose.html und app/main.js identisch', () => {
   const swVersion = sw.match(/var VERSION = '([^']+)'/)?.[1];
   const htmlVersion = html.match(/id="st-version">([^<]+)</)?.[1];
+  const diagVersion = readText('diagnose.html').match(/id="diag-version">([^<]+)</)?.[1];
   const appVersion = readText('app/main.js').match(/export const APP_VERSION = '([^']+)'/)?.[1];
   assert.equal(swVersion, pkg.version, 'sw.js VERSION weicht von package.json ab');
   assert.equal(htmlVersion, pkg.version, 'index.html Version weicht von package.json ab');
+  assert.equal(diagVersion, pkg.version, 'diagnose.html Version weicht von package.json ab');
   assert.equal(appVersion, pkg.version, 'app/main.js APP_VERSION weicht von package.json ab');
 });
 
@@ -146,15 +148,24 @@ test('sw.js: fetch-Handler – Cache zuerst, Offline-Fallback nur im App-Verzeic
 
 /**
  * Alle relativen Dateien, die index.html und das Manifest referenzieren (ohne
- * sw.js, das der Browser selbst holt) – und rekursiv alles, was die JS-Module
+ * sw.js, das der Browser selbst holt), weitere verlinkte Seiten der App
+ * (diagnose.html) samt ihren Dateien – und rekursiv alles, was die JS-Module
  * per import laden. Fehlt eine davon im Precache, bricht die App offline.
  */
 function referencedAssets() {
   const refs = new Set();
-  for (const m of html.matchAll(/(?:href|src)=["']([^"']+)["']/g)) {
-    const ref = m[1];
-    if (/^(?:[a-z]+:|#)/i.test(ref) || ref === 'sw.js') continue;
-    refs.add(ref);
+  const pages = ['index.html'];
+  const seenPages = new Set();
+  while (pages.length) {
+    const pageFile = pages.pop();
+    if (seenPages.has(pageFile) || !existsSync(join(ROOT, pageFile))) continue;
+    seenPages.add(pageFile);
+    for (const m of readText(pageFile).matchAll(/(?:href|src)=["']([^"']+)["']/g)) {
+      const ref = m[1].replace(/^\.\//, '');
+      if (/^(?:[a-z]+:|#)/i.test(ref) || ref === 'sw.js' || ref === '' || ref === '.') continue;
+      refs.add(ref);
+      if (ref.endsWith('.html')) pages.push(ref);
+    }
   }
   for (const icon of manifest.icons) refs.add(icon.src);
   const queue = [...refs].filter((r) => r.endsWith('.js'));
@@ -197,6 +208,7 @@ test('sw.js: alles, was index.html, Manifest und die Module referenzieren, steht
   const shell = new Set(APP_SHELL.map((p) => p.replace(/^\.\//, '')));
   const refs = referencedAssets();
   assert.ok(refs.includes('vendor/ts-fsrs/index.js'), 'Modul-Importe müssen rekursiv erkannt werden');
+  assert.ok(refs.includes('diagnose.html') && refs.includes('app/diagnose.js') && refs.includes('app/speech.js'), 'verlinkte Seiten werden mitgeprüft');
   const missing = refs.filter((ref) => !shell.has(ref));
   assert.deepEqual(missing, [], 'referenzierte Dateien fehlen im Precache – offline würden sie fehlen');
 });

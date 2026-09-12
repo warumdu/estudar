@@ -18,7 +18,7 @@
 'use strict';
 
 var SCOPE_PATH = new URL('./', self.location.href).pathname; // z. B. "/estudar/"
-var VERSION = '0.2.1'; // bei JEDER Auslieferung erhöhen – sonst sehen installierte Geräte die Änderung nie (tests/pwa.test.js wacht darüber)
+var VERSION = '0.2.2'; // bei JEDER Auslieferung erhöhen – sonst sehen installierte Geräte die Änderung nie (tests/pwa.test.js wacht darüber)
 var CACHE_NAME = 'estudar-v' + VERSION;
 var APP_SHELL = [
   './',
@@ -33,6 +33,9 @@ var APP_SHELL = [
   './app/backup.js',
   './app/deckformat.js',
   './app/seed.js',
+  './app/speech.js',
+  './diagnose.html',
+  './app/diagnose.js',
   './vendor/ts-fsrs/index.js',
   './icons/icon-180.png',
   './icons/icon-192.png',

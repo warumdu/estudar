@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 import { chromium } from 'playwright';
 import { startStaticServer } from './helpers/static-server.js';
-import { ROOT } from './helpers/repo.js';
+import { ROOT, readText } from './helpers/repo.js';
 
 let server, browser, context, page;
 const consoleErrors = [];
@@ -591,7 +591,7 @@ test('Sicherung enthält die neuen Felder und lässt sich mit Deckschaltern wied
   await page.click('#btn-export');
   await page.waitForFunction(() => window.__shared && /^estudar-sicherung-/.test(window.__shared.files[0].name));
   const backup = JSON.parse(await page.evaluate(() => window.__shared.files[0].text()));
-  assert.equal(backup.appVersion, '0.2.1');
+  assert.equal(backup.appVersion, JSON.parse(readText('package.json')).version);
   assert.ok(backup.decks.some((d) => d.active === false), 'inaktive Decks sind in der Sicherung');
   assert.ok(backup.cards.some((c) => c.sourceId === 'm2d03-001'));
   assert.ok(backup.cards.some((c) => c.suspended === true));

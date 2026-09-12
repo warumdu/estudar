@@ -11,6 +11,8 @@ import { chromium } from 'playwright';
 import { startStaticServer } from './helpers/static-server.js';
 import { readText } from './helpers/repo.js';
 
+const VERSION = JSON.parse(readText('package.json')).version; // die ausgelieferte Fassung – wird je Auslieferung erhöht
+
 let server, browser, context, page;
 const consoleErrors = [];
 
@@ -369,7 +371,7 @@ test('4. Export als Datei, Deck löschen, Import ersetzt den Bestand – Protoko
   assert.equal(shared.type, 'application/json');
   const backup = JSON.parse(shared.text);
   assert.equal(backup.schema, 'estudar-backup/1');
-  assert.equal(backup.appVersion, '0.2.1');
+  assert.equal(backup.appVersion, VERSION);
   assert.equal(backup.cards.length, cardsBefore);
   assert.equal(backup.cardStates.length, cardsBefore);
   assert.equal(backup.reviews.length, reviewsBefore);
@@ -467,8 +469,8 @@ test('Update: Hinweis statt Neuladen, nie während einer Session, Wechsel erst n
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 15000 });
   await page.evaluate(() => { window.__marker = 'nicht neu geladen'; });
   const sw = readText('sw.js');
-  assert.match(sw, /var VERSION = '0\.2\.1'/);
-  server.override('sw.js', sw.replace("var VERSION = '0.2.1'", "var VERSION = '0.2.1-test'"));
+  assert.ok(sw.includes(`var VERSION = '${VERSION}'`), 'sw.js trägt die Version aus package.json');
+  server.override('sw.js', sw.replace(`var VERSION = '${VERSION}'`, `var VERSION = '${VERSION}-test'`));
 
   // Während einer Session: kein Hinweis
   await page.click('#btn-ueben');
@@ -485,13 +487,13 @@ test('Update: Hinweis statt Neuladen, nie während einer Session, Wechsel erst n
   await page.waitForSelector('#update-hint:not([hidden])');
   assert.equal(await page.evaluate(() => window.__marker), 'nicht neu geladen');
   const before = await page.evaluate(async () => (await caches.keys()).filter((k) => k.startsWith('estudar-v')).sort());
-  assert.deepEqual(before, ['estudar-v0.2.1', 'estudar-v0.2.1-test'], 'neue Fassung liegt vorgeladen bereit, alte läuft weiter');
+  assert.deepEqual(before, [`estudar-v${VERSION}`, `estudar-v${VERSION}-test`], 'neue Fassung liegt vorgeladen bereit, alte läuft weiter');
 
   // Antippen → neue Fassung übernimmt, Seite lädt einmal neu
   await Promise.all([page.waitForNavigation(), page.click('#btn-update')]);
   await waitForApp();
   assert.equal(await page.evaluate(() => window.__marker), undefined, 'Seite wurde neu geladen');
-  await page.waitForFunction(async () => (await caches.keys()).filter((k) => k.startsWith('estudar-v')).join() === 'estudar-v0.2.1-test', null, { timeout: 15000 });
+  await page.waitForFunction(async (v) => (await caches.keys()).filter((k) => k.startsWith('estudar-v')).join() === `estudar-v${v}-test`, VERSION, { timeout: 15000 });
   assert.equal(await count('cards'), cardsTotal, 'Daten überleben das Update');
   server.override('sw.js', null);
 });
