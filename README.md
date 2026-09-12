@@ -174,16 +174,13 @@ hier im Original.
 
 ### A. Den Arbeitsstand in `main` übernehmen
 
-1. Öffne https://github.com/warumdu/estudar in Safari.
-2. Oben erscheint ein gelber Kasten „**claude/affectionate-keller-drehr6** had recent pushes"
-   mit dem Knopf **Compare & pull request**. Tippe darauf.
-   Fehlt der Kasten: Reiter **Pull requests** → **New pull request** → bei
-   „compare:" den Zweig `claude/affectionate-keller-drehr6` wählen (bei „base:" bleibt `main`).
-3. Tippe **Create pull request** (Titel kann bleiben). Erscheint danach ein
-   Formular, dort noch einmal **Create pull request**.
-4. Tippe **Merge pull request**, dann **Confirm merge**. Der Stand ist jetzt in `main`.
-5. GitHub Pages baut die Seite in wenigen Minuten neu (Reiter **Actions** zeigt
+1. Der Pull Request ist schon angelegt: https://github.com/warumdu/estudar/pull/5
+   in Safari öffnen.
+2. Nach unten scrollen, **Merge pull request** antippen, dann **Confirm merge**.
+   Der Stand ist jetzt in `main`.
+3. GitHub Pages baut die Seite in wenigen Minuten neu (Reiter **Actions** zeigt
    „pages build and deployment"; grüner Haken = fertig).
+4. und 5. entfallen.
 
 ### B. Die neue Fassung aufs iPhone holen
 
