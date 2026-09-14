@@ -4,8 +4,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  LANG_DE, LANG_PT, bestVoice, countVoices, describeVoice, estimateSpeechMs, isNoveltyVoice, langScore, normalizeLang,
-  rankVoices, runSequence, silentWavDataUri, sortVoicesForDisplay, speak, speechState, stop, voiceQuality, waitForVoices, waitUntil, watchdogMs,
+  LANG_DE, LANG_PT, SYSTEM_VOICE, bestVoice, countVoices, describeVoice, diffVoices, estimateSpeechMs, isNoveltyVoice, langScore, normalizeLang,
+  pickVoice, rankVoices, runSequence, silentWavDataUri, sortVoicesForDisplay, speak, speechState, stop, voiceKey, voiceQuality, waitForVoices, waitUntil, watchdogMs,
 } from '../app/speech.js';
 
 /* ---- Nachgestellte Uhr: Zeit läuft nur, wenn der Test sie vorstellt ---- */
@@ -74,6 +74,7 @@ test('voiceQuality und Spaßstimmen aus der Stimmkennung', () => {
   assert.equal(voiceQuality(IOS_VOICES[0]), 'compact');
   assert.equal(voiceQuality(IOS_VOICES[1]), 'enhanced');
   assert.equal(voiceQuality(IOS_VOICES[6]), 'premium');
+  assert.equal(voiceQuality({ name: 'Luciana', voiceURI: 'com.apple.voice.super-compact.pt-BR.Luciana' }), 'super-compact', 'die Notfassung von iOS 17+ ist eine eigene Stufe');
   assert.equal(voiceQuality({ name: 'Google', voiceURI: 'Google' }), '');
   assert.equal(isNoveltyVoice(IOS_VOICES[2]), true, 'Eddy ist eine Spaßstimme');
   assert.equal(isNoveltyVoice(IOS_VOICES[8]), true, 'Grandma ist eine Spaßstimme');
@@ -89,9 +90,32 @@ test('rankVoices: genaue Region, lokal, Qualität, Spaßstimmen zuletzt', () => 
   assert.equal(bestVoice(IOS_VOICES, 'fr-FR'), null);
   assert.equal(bestVoice([], LANG_PT), null);
   assert.equal(bestVoice(IOS_VOICES.filter((v) => v.lang === 'pt-PT'), LANG_PT).name, 'Joana', 'ohne pt-BR ist pt-PT die Notlösung');
+  const tiers = [V('Luciana', 'pt-BR', { voiceURI: 'com.apple.voice.super-compact.pt-BR.Luciana' }), V('Luciana', 'pt-BR')];
+  assert.equal(bestVoice(tiers, LANG_PT).voiceURI, 'com.apple.voice.compact.pt-BR.Luciana', 'compact vor super-compact');
   const remoteOnly = [V('Netz', 'pt-BR', { localService: false, voiceURI: 'x' }), V('Gerät', 'pt-BR', { voiceURI: 'y' })];
   assert.equal(bestVoice(remoteOnly, LANG_PT).name, 'Gerät', 'lokal vor Netz');
   assert.equal(bestVoice(IOS_VOICES.filter((v) => v.name === 'Eddy' || v.name === 'Joana'), LANG_PT).name, 'Eddy', 'pt-BR-Spaßstimme vor pt-PT');
+});
+
+test('voiceKey, diffVoices, pickVoice: Kennung, Listenvergleich, gemerkte Wahl', () => {
+  assert.equal(voiceKey(IOS_VOICES[1]), 'com.apple.voice.enhanced.pt-BR.Luciana');
+  assert.equal(voiceKey({ name: 'Ohne', lang: 'pt-BR' }), 'Ohne|pt-BR', 'ohne Kennung: Name und Sprache');
+  assert.equal(voiceKey(null), '|');
+
+  const before = IOS_VOICES.slice(0, 3);
+  const same = diffVoices(before, [...before].reverse());
+  assert.equal(same.changed, false, 'Reihenfolge ist egal');
+  const d = diffVoices(before, [IOS_VOICES[0], IOS_VOICES[2], IOS_VOICES[6]]);
+  assert.equal(d.changed, true);
+  assert.deepEqual(d.added.map(voiceKey), ['com.apple.voice.premium.de-DE.Anna']);
+  assert.deepEqual(d.removed.map(voiceKey), ['com.apple.voice.enhanced.pt-BR.Luciana']);
+  assert.equal(diffVoices([], []).changed, false);
+
+  assert.deepEqual(pickVoice(IOS_VOICES, LANG_PT, ''), { voice: IOS_VOICES[1], source: 'beste' }, 'ohne Wahl der App-Vorschlag');
+  assert.deepEqual(pickVoice(IOS_VOICES, LANG_PT, 'com.apple.voice.compact.pt-BR.Luciana'), { voice: IOS_VOICES[0], source: 'gewählt' }, 'gemerkte Kennung gewinnt');
+  assert.deepEqual(pickVoice(IOS_VOICES, LANG_PT, 'com.apple.voice.gibt.es.nicht'), { voice: IOS_VOICES[1], source: 'beste' }, 'unbekannte Kennung: zurück zum Vorschlag');
+  assert.deepEqual(pickVoice(IOS_VOICES, LANG_PT, SYSTEM_VOICE), { voice: null, source: 'system' }, 'Systemstimme: keine Stimme setzen');
+  assert.deepEqual(pickVoice([], LANG_PT, ''), { voice: null, source: 'keine' });
 });
 
 test('countVoices, sortVoicesForDisplay, describeVoice', () => {

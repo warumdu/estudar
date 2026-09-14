@@ -38,13 +38,35 @@ export function langScore(voiceLang, wanted) {
   return v === vBase ? 1 : 2;
 }
 
-/** Qualitätsstufe aus der Stimmkennung von iOS: premium > enhanced > compact. */
+/**
+ * Qualitätsstufe aus der Stimmkennung von iOS: premium > enhanced > compact >
+ * super-compact. „super-compact" ist die kleinste Notfassung (iOS 17+), die das
+ * System immer dabeihat; die nachgeladenen Stimmen heißen enhanced oder premium.
+ */
 export function voiceQuality(voice) {
   const key = `${voice?.voiceURI || ''} ${voice?.name || ''}`.toLowerCase();
   if (key.includes('premium')) return 'premium';
   if (key.includes('enhanced')) return 'enhanced';
+  if (key.includes('super-compact') || key.includes('supercompact')) return 'super-compact';
   if (key.includes('compact')) return 'compact';
   return '';
+}
+
+/** Eindeutiger Schlüssel einer Stimme: die Kennung, ersatzweise Name und Sprache. */
+export function voiceKey(voice) {
+  return String(voice?.voiceURI || '') || `${voice?.name || ''}|${voice?.lang || ''}`;
+}
+
+/**
+ * Vergleicht zwei Stimmenlisten anhand der Kennungen.
+ * Ergebnis: { changed, added: [Stimmen], removed: [Stimmen] }
+ */
+export function diffVoices(before, after) {
+  const oldKeys = new Set((before || []).map(voiceKey));
+  const newKeys = new Set((after || []).map(voiceKey));
+  const added = (after || []).filter((v) => !oldKeys.has(voiceKey(v)));
+  const removed = (before || []).filter((v) => !newKeys.has(voiceKey(v)));
+  return { changed: added.length > 0 || removed.length > 0, added, removed };
 }
 
 // Spaßstimmen von iOS (Eloquence und die alten macOS-Stimmen) – nie die erste Wahl.
@@ -70,7 +92,7 @@ function voiceScore(voice, wanted) {
   if (!lang) return 0;
   let score = lang * 1000;
   if (isLocalVoice(voice)) score += 500;
-  score += { premium: 300, enhanced: 200, '': 150, compact: 100 }[voiceQuality(voice)];
+  score += { premium: 300, enhanced: 200, '': 150, compact: 100, 'super-compact': 50 }[voiceQuality(voice)];
   if (isNoveltyVoice(voice)) score -= 400;
   if (voice.default) score += 10;
   return score;
@@ -91,6 +113,24 @@ export function rankVoices(voices, wanted) {
 /** Die beste Stimme für eine Sprache oder null. */
 export function bestVoice(voices, wanted) {
   return rankVoices(voices, wanted)[0] || null;
+}
+
+/**
+ * Stimme für eine Sprache unter Beachtung einer gemerkten Wahl (Kennung).
+ * Liefert { voice, source }: source 'gewählt', wenn die gemerkte Kennung in der
+ * Liste steht; 'system', wenn ausdrücklich keine Stimme gesetzt werden soll
+ * (SYSTEM_VOICE – iOS nimmt dann seine Standardstimme für die Sprache);
+ * sonst 'beste' (bestVoice) oder 'keine'.
+ */
+export const SYSTEM_VOICE = 'system';
+export function pickVoice(voices, wanted, preferredKey = '') {
+  if (preferredKey === SYSTEM_VOICE) return { voice: null, source: 'system' };
+  if (preferredKey) {
+    const hit = (voices || []).find((v) => voiceKey(v) === preferredKey);
+    if (hit) return { voice: hit, source: 'gewählt' };
+  }
+  const best = bestVoice(voices, wanted);
+  return { voice: best, source: best ? 'beste' : 'keine' };
 }
 
 /** „Luciana · pt-BR · lokal · enhanced" */

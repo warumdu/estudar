@@ -4,11 +4,16 @@ Meine Vokabelapp, um brasilianisches Portugiesisch offline mit Karteikarten zu l
 Eine installierbare Web-App (PWA): Sie liegt als Icon auf dem iPhone, läuft ohne
 Internet und speichert allen Lernfortschritt nur auf dem Gerät.
 
-**Stand: Phase 3, Teil A – Diagnose für den Fahrmodus (0.2.2).** Bevor der Fahrmodus
-gebaut wird, misst eine Prüfseite auf dem iPhone, was das Gerät kann: welche Stimmen es
-gibt (pt-BR, de-DE), ob die Sprachausgabe im Auto über CarPlay läuft, ob das Wake Lock
-den Bildschirm anlässt und ob die Ausgabe im Dauerbetrieb durchhält. Der Fahrmodus selbst
-(Teil B) kommt erst nach diesem Messergebnis. Alles aus den Phasen 1 und 2 bleibt: Lernen
+**Stand: Phase 3, Teil A – Diagnose für den Fahrmodus, Nachmessung (0.2.3).** Bevor der
+Fahrmodus gebaut wird, misst eine Prüfseite auf dem iPhone, was das Gerät kann: welche
+Stimmen es gibt (pt-BR, de-DE), ob die Sprachausgabe im Auto über CarPlay läuft, ob das
+Wake Lock den Bildschirm anlässt und ob die Ausgabe im Dauerbetrieb durchhält. Erste
+Messung (iOS 18.7): je eine pt-BR- und de-DE-Stimme, beide nur „super-compact"; Dauertest
+sauber; **der Ton kam aus dem Telefon, nicht aus CarPlay** – auch nicht mit stillem Audio
+oder Audiositzung „playback". Fassung 0.2.3 misst deshalb nach: Stimmliste neu einlesen
+und Stimme wählen (kommen die nachgeladenen enhanced/premium-Stimmen an?) und eine echte
+Audiodatei über ein `<audio>`-Element (erreicht die das Auto, die Sprachsynthese aber
+nicht?). Der Fahrmodus selbst (Teil B) kommt erst nach diesem Ergebnis. Alles aus den Phasen 1 und 2 bleibt: Lernen
 mit FSRS, Decks, Import mit Vorschau, Sicherung. ZIP, XLSX und PDF sind bewusst nicht
 eingebaut (Entscheidung zu `docs/phase-2.md`, Schritt 1). Der vollständige Auftrag steht
 in `AUFTRAG.md`, die Vorgaben der Phasen in `docs/phase-1.md`, `docs/phase-2.md` und
@@ -108,21 +113,39 @@ gibt es zuerst eine Prüfseite: **Einstellungen → „Diagnose für den Fahrmod
 direkt https://warumdu.github.io/estudar/diagnose.html in Safari). Sie ändert nichts an
 den Karten und zeigt, nummeriert wie in `docs/phase-3.md`:
 
-1. **Stimmen** – alle Stimmen des Geräts mit Name, Sprachkennung, lokal/aus dem Netz
-   und Qualitätsstufe (compact/enhanced/premium); pt-BR und de-DE hervorgehoben, die
-   Stimme, die die App wählen würde, mit ★. ▶ spricht eine Hörprobe. Fehlt pt-BR,
+1. **Stimmen** – alle pt-BR- und de-DE-Stimmen untereinander, jede mit vollständiger
+   Kennung (an ihr erkennt man die Fassung: super-compact / compact / enhanced / premium),
+   Auswahlknopf und ▶ Hörprobe. Die Wahl bleibt gespeichert und gilt für Testsätze,
+   Dauertest und später den Fahrmodus; ★ ist die Stimme, die die App von sich aus nähme.
+   Als letzte Wahl je Sprache „Systemstimme": keine Stimme setzen, nur die Sprache – iOS
+   nimmt dann die unter Bedienungshilfen → Gesprochene Inhalte ausgewählte Stimme.
+   **Stimmliste neu einlesen** ruft `getVoices()` erneut auf und protokolliert Anzahl und
+   geänderte Kennungen; dasselbe passiert bei jedem `voiceschanged`-Ereignis und bei jeder
+   Rückkehr in die Seite. Alle übrigen Stimmen stehen aufklappbar darunter. Fehlt pt-BR,
    steht dort, wie du die Stimme in den iOS-Einstellungen nachlädst.
-2. **Testsätze** – ein portugiesischer Satz mit der besten pt-BR-Stimme, ein deutscher
-   mit der besten de-DE-Stimme, Sprechtempo 0,8 / 0,9 / 1,0.
-3. **Wake Lock** – anfordern; die Seite sagt, ob es geklappt hat und ob die Sperre nach
-   einem Wechsel in eine andere App und zurück noch steht.
+2. **Testsätze** – ein portugiesischer Satz mit der gewählten pt-BR-Stimme, ein deutscher
+   mit der gewählten de-DE-Stimme, Sprechtempo 0,8 / 0,9 / 1,0.
+3. **Wake Lock** – anfordern; die Seite sagt, ob es geklappt hat. iOS gibt die Sperre beim
+   Wechsel in den Hintergrund frei; die Seite fordert sie bei der Rückkehr automatisch
+   neu an und protokolliert das Ergebnis.
 4. **Zustand (live)** – Sprachausgabe (spricht / pausiert / wartet / beendet), sichtbare
    Höhe, Wake Lock, stilles Audio, Audiositzung.
 5. **Dauertest** – zehn Sätze im Abstand von fünf Sekunden (oder sechzig, fünf Minuten),
    abwechselnd Deutsch und Portugiesisch, jeder mit seiner Nummer.
 6. **Falls der Ton nicht über CarPlay kommt** – zwei Schalter zum Ausprobieren: ein
    stilles Audioelement in Schleife (hält die Audiositzung offen) und, wo iOS es anbietet,
-   die Audiositzung auf „playback".
+   die Audiositzung auf „playback". (Erste Messung: beides ohne Wirkung.)
+7. **Ton im Auto: Datei über `<audio>`** – prüft die Hypothese, dass iOS die
+   Sprachsynthese nicht nach CarPlay leitet, eine echte Audiodatei über ein
+   `<audio>`-Element aber schon. Die Datei `audio/testton.wav` (drei Töne und ein
+   Akkord, 3 s) ist in der VM ohne Bibliothek erzeugt (`npm run tone`,
+   `scripts/make-tone.js`) und liegt im Offline-Cache. **Datei über `<audio>` abspielen**
+   protokolliert `play()`, die Ereignisse (playing, pause, ended, error) und die
+   Zustandsangaben des Elements; die Media-Session-Angaben (Titel „estudar Testton",
+   Interpret „estudar Diagnose") sind gesetzt, damit die App in der Wiedergabeansicht
+   von CarPlay erscheint – Play/Pause von dort steht im Protokoll als „vom System".
+   **Beides nacheinander** spielt erst die Datei und spricht dann denselben Inhalt
+   („Eins, zwei, drei") mit der gewählten de-DE-Stimme.
 
 Alles landet mit Zeitstempel im **Protokoll** unten auf der Seite. Es bleibt auf dem
 Gerät gespeichert, auch wenn die Seite neu lädt; „Teilen" schickt es als Text (z. B. in
@@ -174,13 +197,16 @@ hier im Original.
 
 ### A. Den Arbeitsstand in `main` übernehmen
 
-1. Der Pull Request ist schon angelegt: https://github.com/warumdu/estudar/pull/5
-   in Safari öffnen.
-2. Nach unten scrollen, **Merge pull request** antippen, dann **Confirm merge**.
-   Der Stand ist jetzt in `main`.
-3. GitHub Pages baut die Seite in wenigen Minuten neu (Reiter **Actions** zeigt
+1. Öffne https://github.com/warumdu/estudar in Safari.
+2. Oben erscheint ein gelber Kasten „**claude/modest-heisenberg-y07o0e** had recent pushes"
+   mit dem Knopf **Compare & pull request**. Tippe darauf.
+   Fehlt der Kasten: Reiter **Pull requests** → **New pull request** → bei
+   „compare:" den Zweig `claude/modest-heisenberg-y07o0e` wählen (bei „base:" bleibt `main`).
+3. Tippe **Create pull request** (Titel kann bleiben). Erscheint danach ein
+   Formular, dort noch einmal **Create pull request**.
+4. Tippe **Merge pull request**, dann **Confirm merge**. Der Stand ist jetzt in `main`.
+5. GitHub Pages baut die Seite in wenigen Minuten neu (Reiter **Actions** zeigt
    „pages build and deployment"; grüner Haken = fertig).
-4. und 5. entfallen.
 
 ### B. Die neue Fassung aufs iPhone holen
 
@@ -188,8 +214,8 @@ hier im Original.
    „Neue Fassung verfügbar – **Aktualisieren**". Tippe darauf; die App lädt einmal neu.
    Erscheint der Hinweis nicht: Einstellungen → **Nach neuer Fassung suchen**, oder
    die App schließen (nach oben wischen) und neu vom Icon starten.
-7. In den Einstellungen muss bei **Version 0.2.2** stehen und bei **Offline: bereit ✓**.
-   Darunter steht jetzt der Knopf **Diagnose für den Fahrmodus**. Dein Bestand bleibt
+7. In den Einstellungen muss bei **Version 0.2.3** stehen und bei **Offline: bereit ✓**.
+   Darunter steht der Knopf **Diagnose für den Fahrmodus**. Dein Bestand bleibt
    unverändert.
 
 ### C. Die Beispieldateien auf das iPhone holen
@@ -204,50 +230,44 @@ mit ausgeliefert. Je Datei in **Safari auf dem iPhone**:
    **Dateien → Downloads**. Zeigt Safari den Text stattdessen direkt an: Teilen-Symbol →
    **In Dateien sichern**.
 
-### D. Diagnose für den Fahrmodus – die Messung (Phase 3, Teil A)
+### D. Nachmessung: Stimmen und Ton im Auto (Phase 3, Teil A, Fassung 0.2.3)
 
-Die entscheidende Frage: **Kommt der Ton aus den Autolautsprechern oder aus dem
-Telefon?** Alles andere ist Beiwerk. Mach die Messung in der App vom Icon (Einstellungen →
-„Diagnose für den Fahrmodus"), nicht in Safari – dort läuft später der Fahrmodus.
+Die erste Messung ist erledigt (Ergebnis oben unter „Stand"). Jetzt zwei Fragen, in der
+App vom Icon (Einstellungen → „Diagnose für den Fahrmodus"):
 
-**Zu Hause, fünf Minuten:**
+**Zu Hause, zwei Minuten – Stimmen:**
 
-1. Diagnose öffnen. Oben muss „Gestartet: als App vom Home-Bildschirm ✓" stehen.
-2. Unter **1 · Stimmen**: Steht bei „Beste pt-BR" und „Beste de-DE" je eine Stimme
-   (z. B. Luciana und Anna)? Erscheint stattdessen der Kasten „Keine pt-BR-Stimme
-   gefunden", lade sie nach, wie dort beschrieben, und öffne die Seite neu.
-3. **Portugiesisch sprechen** und **Deutsch sprechen** antippen. Unter „2 · Testsätze"
-   muss danach „Ende nach … (end-Ereignis)" stehen. Gefällt dir eine andere Stimme aus
-   der Liste besser (▶ Hörprobe), merk dir den Namen.
-4. **Wake Lock anfordern** → „aktiv seit …". Dann zum Home-Bildschirm, eine andere App
-   öffnen, zurück in estudar. Im Protokoll steht jetzt „Seite wieder sichtbar – Wake Lock
-   steht noch" oder „steht NICHT mehr". Beides ist ein gültiges Ergebnis; ich brauche
-   nur den Satz.
+1. Diagnose öffnen, unter **1 · Stimmen** auf **Stimmliste neu einlesen** tippen. Im
+   Protokoll steht je pt-BR- und de-DE-Stimme eine Zeile mit der vollständigen Kennung.
+2. Steht dort eine Kennung mit `enhanced` oder `premium` (z. B.
+   `com.apple.voice.enhanced.pt-BR.Luciana`)? Dann diese Fassung antippen (Häkchen),
+   ▶ Hörprobe, fertig – die Wahl bleibt gespeichert.
+3. Steht nur `super-compact`: einmal die Zeile **Systemstimme für pt-BR** mit ▶ anhören
+   (iOS wählt dann die Stimme aus Bedienungshilfen → Gesprochene Inhalte selbst). Klingt
+   sie deutlich besser als Luciana super-compact, wähle sie. Dann in die iOS-Einstellungen
+   (Bedienungshilfen → Gesprochene Inhalte → Stimmen → Portugiesisch), prüfen, dass
+   Luciana (Enhanced) dort als geladen und ausgewählt steht, zurück in die App,
+   **Stimmliste neu einlesen** – die Rückkehr liest ohnehin nach, das Protokoll sagt
+   „Kennungen unverändert" oder „GEÄNDERT".
+4. Mir schicken: die Protokollzeilen der pt-BR- und de-DE-Stimmen (Kennungen) und ob die
+   Systemstimme anders klang.
 
-**Im stehenden Auto, Motor an, CarPlay verbunden, iPhone auf der Ladeschale, Bildschirm an:**
+**Im stehenden Auto, vier Fälle in dieser Reihenfolge – je Fall: Woher kam der Ton?**
 
-5. **Portugiesisch sprechen.** Kommt der Ton aus dem Auto oder aus dem Telefon? Kommt
-   gar nichts: Radio auf die CarPlay-Quelle stellen und den Stummschalter am iPhone
-   prüfen, dann noch einmal.
-6. **10 Sätze (50 s)** starten und nur zuhören: Hörst du alle zehn, gleichmäßig, aus
-   dem Auto? Danach steht unter „5 · Dauertest" die Zeile „Dauertest fertig: 10 von 10
-   gesprochen · end-Ereignisse 10 · Watchdog 0 …" – oder eben andere Zahlen.
-7. **Unterbrechung.** Dauertest noch einmal starten und mittendrin Siri über das Lenkrad
-   aufrufen (oder dich kurz anrufen lassen). Läuft der Test danach weiter, bleibt er
-   stehen, oder zeigt „4 · Zustand" dauerhaft „pausiert"?
-8. **Nur wenn in Schritt 5 der Ton aus dem Telefon kam:** unter „6 · Falls der Ton
-   nicht über CarPlay kommt" den Schalter **Stilles Audio in Schleife** einschalten und
-   Schritt 5 und 6 wiederholen. Gibt es auch den Schalter **Audiositzung auf „playback"**,
-   probiere ihn ebenfalls – einzeln und zusammen mit dem stillen Audio.
+- **A) CarPlay verbunden, Sprachausgabe:** unter 2 **Portugiesisch sprechen**.
+  Auto oder Telefon?
+- **B) CarPlay verbunden, Datei über `<audio>`:** unter 7 **Datei über `<audio>`
+  abspielen** (drei Töne). Auto oder Telefon? Erscheint „estudar Testton" in der
+  CarPlay-Wiedergabeansicht? Danach **Beides nacheinander**: kommen Töne und Sprache
+  aus derselben Quelle?
+- **C) CarPlay getrennt (Kabel ab bzw. CarPlay am Auto aus), iPhone nur als
+  Bluetooth-Audiogerät verbunden, Sprachausgabe:** wieder **Portugiesisch sprechen**.
+  Auto oder Telefon?
+- **D) CarPlay getrennt, Bluetooth, Datei über `<audio>`:** wieder **Datei über
+  `<audio>` abspielen**. Auto oder Telefon?
 
-**Ergebnis schicken:**
-
-9. Unten **Protokoll → Teilen** (z. B. in Notizen oder als Nachricht an dich selbst)
-   und den Text in den Chat kopieren. Dazu in eigenen Worten: Auto oder Telefon; alle
-   zehn Sätze gehört; Wake Lock nach dem Wechsel steht noch / nicht mehr; was die
-   Unterbrechung gemacht hat; falls ausprobiert, ob das stille Audio geholfen hat.
-
-Bis dahin baue ich Teil B nicht.
+Danach **Protokoll → Teilen** und mir je Fall ein Wort: Auto oder Telefon. Bis dahin
+baue ich Teil B nicht.
 
 ## Technik in Kürze
 
@@ -267,15 +287,17 @@ Bis dahin baue ich Teil B nicht.
   CSV-Leser, Dublettenerkennung und Export in `app/deckformat.js`. Importe schreiben
   mit `add()` in einer Transaktion: ein Schlüssel, den es schon gibt, lässt den ganzen
   Import scheitern statt etwas zu überschreiben.
-- **Sprachausgabe.** Web Speech API des Browsers (`speechSynthesis`), keine Bibliothek,
-  keine Audiodateien. `app/speech.js` bewertet Stimmen (genaue Region, lokal, Qualität,
-  Spaßstimmen zuletzt), spricht mit Promise auf das end-Ereignis plus Watchdog und plant
-  Folgen aus Zeitstempeln. Die Diagnoseseite (`diagnose.html`, `app/diagnose.js`) nutzt
-  das und liegt mit im Offline-Cache.
+- **Sprachausgabe.** Web Speech API des Browsers (`speechSynthesis`), keine Bibliothek.
+  `app/speech.js` bewertet Stimmen (genaue Region, lokal, Qualität, Spaßstimmen zuletzt),
+  merkt sich eine gewählte Kennung, vergleicht Stimmenlisten, spricht mit Promise auf das
+  end-Ereignis plus Watchdog und plant Folgen aus Zeitstempeln. Die Diagnoseseite
+  (`diagnose.html`, `app/diagnose.js`) nutzt das und liegt mit im Offline-Cache. Die
+  einzige Audiodatei ist der Testton `audio/testton.wav`, in der VM erzeugt.
 - **Tests** laufen nur in der Entwicklungs-VM mit Node (`npm test`): Scheduler,
   Antwortvergleich, Kartenmodell, Sicherung, Deckformat samt Beispieldateien und
   Sprachausgabe mit nachgestellter Uhr (Node), dazu die Bedienabläufe der Abnahmelisten
-  aus Phase 1 und 2, die Diagnoseseite mit nachgestellter Sprachausgabe, ein Offline-Test
+  aus Phase 1 und 2, die Diagnoseseite mit nachgestellter Sprachausgabe und echtem
+  Testton, ein Offline-Test
   und der Update-Ablauf im Chromium, sowie Manifest, Service Worker, Vendor-Prüfsummen
   und der CDN-Wächter. Die App selbst braucht kein Node.
 
@@ -285,7 +307,8 @@ Bis dahin baue ich Teil B nicht.
 index.html             Die Bildschirme (Heute, Session, Decks, Importieren, Karte, Einstellungen)
 diagnose.html          Prüfseite für den Fahrmodus (Phase 3, Teil A)
 app/main.js            Oberfläche, Session, Import, Export, Sicherung, Update-Hinweis
-app/diagnose.js        Ablauf der Prüfseite: Stimmen, Testsätze, Wake Lock, Dauertest, Protokoll
+app/diagnose.js        Ablauf der Prüfseite: Stimmen und Stimmwahl, Testsätze, Wake Lock, Dauertest, Testton, Protokoll
+audio/testton.wav      Testton der Prüfseite (drei Töne, 3 s), erzeugt mit scripts/make-tone.js
 app/speech.js          Sprachausgabe: Stimmen bewerten, sprechen mit end-Ereignis und Watchdog, Zeitplan
 app/db.js              IndexedDB, Schema und Migration
 app/scheduler.js       Anbindung an ts-fsrs, Klartext-Intervalle, Tagesliste, beide Tageslimits
@@ -299,7 +322,7 @@ manifest.webmanifest   App-Beschreibung für die Installation
 sw.js                  Service Worker (Offline-Cache, Update auf Wunsch)
 icons/                 App-Icons (SVG-Quelle und PNG-Fassungen)
 vendor/                Bibliotheken, aus npm kopiert und gepinnt
-scripts/               Hilfsskripte für die VM (vendor kopieren, Icons rendern)
+scripts/               Hilfsskripte für die VM (vendor kopieren, Icons rendern, Testton erzeugen)
 tests/                 Node- und Browser-Tests
 docs/deck-format.md    Das Dateiformat für Kartenstapel – für andere Chats gedacht
 docs/beispiele/        Importierbare Beispieldateien, Sammeldatei, 300-Karten-Testdatei, zwei kaputte

@@ -30,6 +30,14 @@
     .voice-list li.hl .v-name b { color: var(--accent); }
     .voice-list li.best .v-name b::after { content: " ★"; }
     .voice-list .play { appearance: none; border: 0; border-radius: 50%; width: 2.6rem; height: 2.6rem; flex: 0 0 auto; background: var(--surface-2); color: var(--text); font-size: 1.1rem; cursor: pointer; }
+    .voice-list .v-name code { display: block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; color: var(--muted); overflow-wrap: anywhere; }
+    .voice-list input[type="radio"] { width: 1.4rem; height: 1.4rem; flex: 0 0 auto; accent-color: var(--accent); margin: 0; }
+    .voice-list li.chosen { background: rgba(123, 211, 164, 0.16); }
+    .voice-list li.chosen .v-name b::before { content: "✓ "; color: var(--accent); }
+    .voice-list li.empty { color: var(--muted); }
+    .diag h3 { margin: 1.1rem 0 0; font-size: 1rem; }
+    details.all-voices { margin-top: 0.9rem; }
+    details.all-voices summary { cursor: pointer; font-weight: 600; padding: 0.6rem 0; }
     .status-line { margin-top: 0.6rem; font-weight: 600; min-height: 1.4rem; overflow-wrap: anywhere; }
     .hint-box { background: var(--surface); border-radius: 1rem; padding: 0.9rem 1.1rem; margin-top: 0.8rem; font-size: 0.95rem; }
     .log { background: var(--surface); border-radius: 1rem; padding: 0.8rem 0.9rem; margin: 0.7rem 0 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch; color: var(--text); }
@@ -45,7 +53,7 @@
       <h1>Diagnose</h1>
       <a href="./" class="btn small">Zurück zur App</a>
     </header>
-    <p class="muted small">Prüfseite für den Fahrmodus (Phase 3, Teil A). Sie misst, was dieses iPhone kann, und ändert nichts an deinen Karten. Fassung <span id="diag-version">0.2.2</span>.</p>
+    <p class="muted small">Prüfseite für den Fahrmodus (Phase 3, Teil A). Sie misst, was dieses iPhone kann, und ändert nichts an deinen Karten. Fassung <span id="diag-version">0.2.3</span>.</p>
 
     <ul class="rows">
       <li><span class="label">Gestartet</span><span class="value" id="st-mode">…</span></li>
@@ -56,14 +64,23 @@
     <h2>1 · Stimmen</h2>
     <p class="status-line" id="voices-summary">Stimmen werden gesucht …</p>
     <ul class="rows">
-      <li><span class="label">Beste pt-BR</span><span class="value small-value" id="voices-best-pt">–</span></li>
-      <li><span class="label">Beste de-DE</span><span class="value small-value" id="voices-best-de">–</span></li>
+      <li><span class="label">Gewählt pt-BR</span><span class="value small-value" id="voices-best-pt">–</span></li>
+      <li><span class="label">Gewählt de-DE</span><span class="value small-value" id="voices-best-de">–</span></li>
     </ul>
+    <button type="button" id="btn-voices-reload" class="btn wide">Stimmliste neu einlesen</button>
+    <p class="muted small">Ruft getVoices() erneut auf und protokolliert, wie viele Stimmen kommen und ob sich die Kennungen geändert haben. Die Liste wird außerdem bei jedem voiceschanged-Ereignis und bei jeder Rückkehr in die Seite neu gelesen. Nach dem Nachladen einer Stimme in den iOS-Einstellungen: hierher zurück und diesen Knopf drücken.</p>
     <div class="hint-box" id="voices-hint-pt" hidden>
-      <strong>Keine pt-BR-Stimme gefunden.</strong> Nachladen: iOS-Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen → Portugiesisch → Brasilien → eine Stimme (z. B. „Luciana") laden. Danach diese Seite neu öffnen.
+      <strong>Keine pt-BR-Stimme gefunden.</strong> Nachladen: iOS-Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen → Portugiesisch → Brasilien → eine Stimme (z. B. „Luciana") laden. Danach hierher zurück und „Stimmliste neu einlesen".
     </div>
-    <ul class="voice-list" id="voices-list"></ul>
-    <p class="muted small">▶ spricht eine Hörprobe mit genau dieser Stimme. ★ ist die Stimme, die die App wählen würde.</p>
+    <h3>pt-BR-Stimmen</h3>
+    <ul class="voice-list" id="voices-pt"></ul>
+    <h3>de-DE-Stimmen</h3>
+    <ul class="voice-list" id="voices-de"></ul>
+    <p class="muted small">Jede Zeile zeigt die vollständige Kennung – an ihr erkennt man die Fassung (super-compact, compact, enhanced, premium). Antippen wählt die Stimme für Testsätze, Dauertest und später den Fahrmodus; die Wahl bleibt gespeichert. ▶ spricht eine Hörprobe mit genau dieser Stimme. ★ ist die Stimme, die die App von sich aus wählen würde. „Systemstimme" setzt keine Stimme, sondern nur die Sprache – iOS nimmt dann die Stimme, die unter Bedienungshilfen → Gesprochene Inhalte für die Sprache ausgewählt ist.</p>
+    <details class="all-voices">
+      <summary>Alle Stimmen (<span id="voices-all-count">0</span>)</summary>
+      <ul class="voice-list" id="voices-list"></ul>
+    </details>
 
     <h2>2 · Testsätze</h2>
     <div class="field">
@@ -83,9 +100,8 @@
 
     <h2>3 · Wake Lock</h2>
     <button type="button" id="btn-wakelock" class="btn primary wide">Wake Lock anfordern</button>
-    <label class="check"><input type="checkbox" id="wl-auto"><span>nach Rückkehr in die Seite automatisch erneut anfordern (so wird es der Fahrmodus tun)</span></label>
     <p class="status-line" id="wl-status">nicht angefordert</p>
-    <p class="muted small">Prüfung: anfordern, dann in eine andere App wechseln und zurückkommen. Die Zeile oben und das Protokoll sagen, ob die Sperre noch steht.</p>
+    <p class="muted small">Prüfung: anfordern, dann in eine andere App wechseln und zurückkommen. iOS gibt die Sperre beim Wechsel in den Hintergrund frei; die Seite fordert sie bei der Rückkehr automatisch neu an und protokolliert, ob das klappt – so wird es der Fahrmodus tun.</p>
 
     <h2>4 · Zustand (live)</h2>
     <ul class="rows">
@@ -116,6 +132,21 @@
       <span class="switch"><input type="checkbox" id="sw-session"><span></span></span>
     </label>
     <p class="muted small" id="session-note"></p>
+
+    <h2>7 · Ton im Auto: Datei über &lt;audio&gt;</h2>
+    <p class="muted small">Prüft die Hypothese, dass iOS die Sprachsynthese nicht nach CarPlay leitet, eine echte Audiodatei über ein &lt;audio&gt;-Element aber schon. Die Datei ist ein Glockenspiel aus drei Tönen und einem Akkord (<code>audio/testton.wav</code>, 3 s, in der VM ohne Bibliothek erzeugt, liegt im Offline-Cache). Kein Web Audio, keine Sprachsynthese – nur das Element.</p>
+    <audio id="tone" src="audio/testton.wav" preload="auto" playsinline></audio>
+    <div class="btn-row">
+      <button type="button" id="btn-tone" class="btn primary">Datei über &lt;audio&gt; abspielen</button>
+      <button type="button" id="btn-both" class="btn primary">Beides nacheinander</button>
+      <button type="button" id="btn-tone-stop" class="btn">Stopp</button>
+    </div>
+    <p class="status-line" id="tone-status"></p>
+    <ul class="rows">
+      <li><span class="label">Element</span><span class="value small-value" id="st-tone">…</span></li>
+      <li><span class="label">Media Session</span><span class="value small-value" id="st-media">…</span></li>
+    </ul>
+    <p class="muted small">„Beides nacheinander": erst die Datei (drei Töne), dann derselbe Inhalt gesprochen („Eins, zwei, drei" mit der gewählten de-DE-Stimme), damit du im selben Durchgang hörst, ob die beiden Wege verschieden laufen. Die Media-Session-Angaben (Titel, Interpret) sind gesetzt, damit die App in der Wiedergabeansicht von CarPlay erscheint; drückst du dort Pause oder Play, steht im Protokoll „vom System".</p>
 
     <h2>Protokoll</h2>
     <div class="btn-row">
