@@ -313,6 +313,13 @@ test('Diagnoseseite: Stimmliste neu einlesen – Knopf, voiceschanged und Rückk
     assert.match(log, /Seite wieder sichtbar – Wake Lock war nicht angefordert/);
     assert.match(log, /Stimmen \(nach Rückkehr in die Seite\): 6 gefunden · pt-BR 3 · de-DE 1/);
     assert.match(log, /Kennungen GEÄNDERT: 0 neu, 1 weg\n[^\n]*  − Helena \[de-DE, lokal, compact\] com\.apple\.voice\.compact\.de-DE\.Helena/);
+    // Eine zwischendurch leere Liste (iOS-Eigenart) löscht die Wahl nicht.
+    await page.evaluate(() => { window.__fakeSynth.voices = []; window.diagnose.rereadVoices('Probe leer'); });
+    assert.match(await logText(page), /Stimmen \(Probe leer\): getVoices\(\) leer gemeldet – bisherige Liste \(6\) bleibt/);
+    assert.equal(await page.locator('#voices-summary').textContent(), '6 Stimmen · pt-BR: 3 · de-DE: 1');
+    assert.equal(await page.locator('#voices-best-pt').textContent(), 'Luciana · pt-BR · lokal · premium (gewählt)');
+    await page.evaluate(() => { window.__fakeSynth.voices = window.diagnose.state.voices; });
+
     // Unverändert: die Rückkehr protokolliert die Stimmen nicht noch einmal.
     const lines = (await logText(page)).split('\n').length;
     await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
@@ -376,6 +383,16 @@ test('Diagnoseseite: Testdatei über <audio> spielt bis zum ended-Ereignis, Medi
     log = await logText(page);
     assert.match(log, /Stopp: Datei und Sprachausgabe/);
     assert.doesNotMatch(log, /vom System/, 'ein Stopp von der Seite gilt nicht als Pause vom System');
+
+    // Läuft die Datei schon, bricht „Beides nacheinander" ab, statt die Sprache darüberzulegen.
+    const first = page.evaluate(() => window.diagnose.playTone());
+    await page.waitForFunction(() => document.getElementById('st-tone').textContent.startsWith('spielt'));
+    const refused = await page.evaluate(() => window.diagnose.playBoth());
+    assert.deepEqual(refused, { file: { reason: 'busy', durationMs: 0 }, spoken: null });
+    assert.match(await page.locator('#tone-status').textContent(), /erst die laufende Datei stoppen/);
+    await page.click('#btn-tone-stop');
+    assert.equal((await first).reason, 'stopped');
+    assert.match(await logText(page), /pause-Ereignis bei \d,\d\d s \(Stopp von der Seite\)/);
 
     // Beides nacheinander: erst die Datei bis zum Ende, dann „Eins, zwei, drei" mit der de-DE-Stimme.
     const out = await page.evaluate(() => window.diagnose.playBoth());

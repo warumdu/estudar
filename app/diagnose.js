@@ -35,7 +35,7 @@ const state = {
   silent: null,       // <audio> mit Stille in Schleife
   tone: null,         // <audio> mit der Testdatei
   toneRun: null,      // laufende Wiedergabe: { label, startedAt, resolve }
-  tonePausedByPage: 0, // Zeitstempel des letzten pause() von der Seite – das pause-Ereignis kommt erst danach
+  pauseSource: '',    // wer pause() gerufen hat, bevor das pause-Ereignis kommt: 'seite' | 'system' | '' (unbekannt = System)
   both: null,         // AbortController von „Beides nacheinander"
   wake: { sentinel: null, requestedAt: null, releasedAt: null, releasedHidden: false },
   lastHeight: null,
@@ -329,6 +329,11 @@ function probe(voice) {
 function rereadVoices(trigger, { force = false } = {}) {
   if (!synth) return;
   const fresh = synth.getVoices() || [];
+  if (!fresh.length && state.voices.length && !force) {
+    // iOS liefert getVoices() zwischendurch leer – das ist keine Änderung, die Wahl bleibt.
+    log(`Stimmen (${trigger}): getVoices() leer gemeldet – bisherige Liste (${state.voices.length}) bleibt`);
+    return;
+  }
   const d = diffVoices(state.voices, fresh);
   if (!d.changed && !force) return;
   applyVoices(fresh, trigger, state.voices);
@@ -552,12 +557,16 @@ function setupTone() {
     const t = `${a.currentTime.toFixed(2).replace('.', ',')} s`;
     if (type === 'playing') log(`${label}: playing-Ereignis nach ${run ? sec(Date.now() - run.startedAt) : '–'} · readyState ${a.readyState}`);
     else if (type === 'ended') { log(`${label}: ended-Ereignis bei ${t} (Dauer ${Number.isFinite(a.duration) ? sec(a.duration * 1000) : '?'})`); finishTone('ended'); }
-    else if (type === 'pause') { if (!a.ended) log(`${label}: pause-Ereignis bei ${t}${Date.now() - state.tonePausedByPage < 1000 ? ' (Stopp von der Seite)' : ' – nicht von der Seite, also vom System (CarPlay, Anruf, Siri)'}`); }
+    else if (type === 'pause') {
+      const source = state.pauseSource;
+      state.pauseSource = '';
+      if (!a.ended) log(`${label}: pause-Ereignis bei ${t}${source === 'seite' ? ' (Stopp von der Seite)' : source === 'system' ? ' (Media Session, vom System)' : ' – nicht von der Seite, also vom System (CarPlay, Anruf, Siri)'}`);
+    }
     else if (type === 'error') { log(`${label}: error-Ereignis – Code ${a.error?.code || '?'} ${a.error?.message || ''}`); finishTone('error'); }
     else if (type === 'stalled' || type === 'waiting' || type === 'suspend') log(`${label}: ${type}-Ereignis bei ${t}`);
     else if (type === 'play') log(`${label}: play-Ereignis`);
   });
-  for (const type of ['play', 'playing', 'pause', 'ended', 'error', 'stalled', 'waiting']) evt(type);
+  for (const type of ['play', 'playing', 'pause', 'ended', 'error', 'stalled', 'waiting', 'suspend']) evt(type);
   const loaded = () => log(`Testdatei geladen: Dauer ${sec(a.duration * 1000)} · ${a.currentSrc.split('/').pop()}`);
   if (a.readyState >= 1) loaded(); else a.addEventListener('loadedmetadata', loaded, { once: true });
   setupMediaSession();
@@ -573,8 +582,18 @@ function setupMediaSession() {
     log(`Media Session: Angaben ließen sich nicht setzen – ${err?.message || err}`);
   }
   const handlers = {
-    play: () => { log('Media Session: play vom System – Datei wird abgespielt'); playTone('Testdatei (System)'); },
-    pause: () => { log('Media Session: pause vom System'); state.tonePausedByPage = Date.now(); state.tone?.pause(); },
+    play: () => {
+      const a = state.tone;
+      if (state.toneRun && a?.paused && !a.ended) {
+        // Vom System pausiert, vom System fortgesetzt: dieselbe Wiedergabe weiterführen.
+        log('Media Session: play vom System – Wiedergabe wird fortgesetzt');
+        a.play().then(() => setPlaybackState('playing')).catch((err) => log(`Media Session: Fortsetzen abgelehnt – ${err?.name || 'Fehler'}: ${err?.message || err}`));
+        return;
+      }
+      log('Media Session: play vom System – Datei wird abgespielt');
+      playTone('Testdatei (System)');
+    },
+    pause: () => { log('Media Session: pause vom System'); state.pauseSource = 'system'; state.tone?.pause(); setPlaybackState('paused'); },
     stop: () => { log('Media Session: stop vom System'); stopTone(); },
   };
   for (const [action, fn] of Object.entries(handlers)) {
@@ -625,7 +644,7 @@ async function playTone(label = 'Testdatei') {
 function stopTone() {
   const a = state.tone;
   if (!a) return;
-  state.tonePausedByPage = Date.now();
+  state.pauseSource = 'seite';
   a.pause();
   finishTone('stopped');
 }
@@ -641,6 +660,12 @@ async function playBoth() {
   const limit = new Promise((resolve) => { timer = setTimeout(() => resolve({ reason: 'timeout', durationMs: TONE_TIMEOUT_MS }), TONE_TIMEOUT_MS); });
   const file = await Promise.race([playTone('Beides 1/2 Datei'), limit]);
   clearTimeout(timer);
+  if (file.reason === 'busy' || file.reason === 'unsupported') {
+    state.both = null;
+    log(`Beides nacheinander abgebrochen: Datei ${file.reason === 'busy' ? 'spielt schon' : 'nicht abspielbar'}`);
+    $('tone-status').textContent = 'Beides nacheinander: erst die laufende Datei stoppen';
+    return { file, spoken: null };
+  }
   if (file.reason === 'timeout') { log(`Beides 1/2 Datei: kein ended-Ereignis nach ${sec(TONE_TIMEOUT_MS)} – weiter mit der Sprachausgabe`); stopTone(); }
   let spoken = null;
   if (!ctrl.signal.aborted) {
